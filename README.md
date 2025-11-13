@@ -34,7 +34,3 @@ A full-stack application with frontend and backend components.
 ## Getting Started
 
 More detailed setup instructions coming soon.
-
-## Documentation
-
-See the `Documentation/` folder for additional project information.
