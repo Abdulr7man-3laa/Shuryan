@@ -1,0 +1,100 @@
+/* src/styles/index.css */
+@import "tailwindcss";
+@import "./animations.css";
+
+@layer base {
+  :root {
+    /* Shuryan Brand Colors */
+    --color-primary: 180 83% 39%;        /* #14b8a6 - Teal */
+    --color-primary-light: 174 72% 56%;  /* #2dd4bf */
+    --color-primary-dark: 173 58% 39%;   /* #0d9488 */
+    
+    --color-secondary: 158 64% 52%;      /* #10b981 - Emerald */
+    --color-accent: 217 91% 60%;         /* #3b82f6 - Blue */
+    
+    /* Semantic Colors */
+    --color-success: 158 64% 52%;        /* #10b981 */
+    --color-warning: 38 92% 50%;         /* #f59e0b */
+    --color-error: 0 84% 60%;            /* #ef4444 */
+    --color-info: 217 91% 60%;           /* #3b82f6 */
+    
+    /* Neutral Colors */
+    --color-gray-50: 210 20% 98%;
+    --color-gray-100: 220 14% 96%;
+    --color-gray-200: 220 13% 91%;
+    --color-gray-300: 216 12% 84%;
+    --color-gray-400: 218 11% 65%;
+    --color-gray-500: 220 9% 46%;
+    --color-gray-600: 215 14% 34%;
+    --color-gray-700: 217 19% 27%;
+    --color-gray-800: 215 28% 17%;
+    --color-gray-900: 221 39% 11%;
+    
+    /* UI Colors */
+    --color-border: 220 13% 91%;
+    --color-input: 220 13% 91%;
+    --color-ring: 180 83% 39%;
+    
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius-base: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius: 0.5rem;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-base: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  body {
+    font-family: 'Cairo', 'Tajawal', 'Segoe UI', 'Tahoma', sans-serif;
+    direction: rtl;
+    color: hsl(var(--color-gray-900));
+    background-color: hsl(var(--color-gray-50));
+  }
+  
+  * {
+    @apply border-gray-200;
+  }
+}
+
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+  
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+  
+  .animate-slideDown {
+    animation: slideDown 0.5s ease-out;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translate(-50%, -100%);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
