@@ -1,6 +1,6 @@
 # ShurYan
 
-A full-stack application with frontend and backend components.
+A full-stack frontend and backend application.
 
 ## Technology Stack
 
