@@ -1,88 +1,33 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   FaStar, FaFilter, FaChevronDown, 
   FaCheck, FaChartLine, FaAward, FaUsers, FaRegStar
 } from 'react-icons/fa';
 import ReviewCard from '../components/ReviewCard';
+import useReviews from '../hooks/useReviews';
 
 /**
  * ReviewsPage - Premium Design
  * Complete reviews management with beautiful UI/UX
  */
 const ReviewsPage = () => {
-  // Mock data - Replace with real API
-  const [reviews] = useState([
-    {
-      id: 1,
-      patientName: 'أحمد محمد علي',
-      patientImage: null,
-      rating: 5.0,
-      comment: 'دكتور ممتاز جداً، متابعة دقيقة واهتمام بالتفاصيل. شرح الحالة بشكل واضح وطمأنني كثيراً. أنصح بالتعامل معه.',
-      date: '2025-10-28',
-      isVerified: true,
-      sessionType: 'كشف عام',
-      categories: ['احترافية', 'تواصل ممتاز', 'نظافة']
-    },
-    {
-      id: 2,
-      patientName: 'فاطمة حسن',
-      patientImage: null,
-      rating: 4.5,
-      comment: 'تجربة جيدة جداً، الدكتور صبور ويستمع للمريض. العيادة نظيفة والموظفين محترمين.',
-      date: '2025-10-27',
-      isVerified: true,
-      sessionType: 'متابعة',
-      categories: ['احترافية', 'نظافة']
-    },
-    {
-      id: 3,
-      patientName: 'محمود السيد',
-      patientImage: null,
-      rating: 5.0,
-      comment: 'أفضل دكتور تعاملت معه، خبرة عالية وتشخيص دقيق. شكراً جزيلاً.',
-      date: '2025-10-25',
-      isVerified: true,
-      sessionType: 'كشف عام',
-      categories: ['خبرة عالية', 'تشخيص دقيق']
-    },
-    {
-      id: 4,
-      patientName: 'نور الدين',
-      patientImage: null,
-      rating: 4.0,
-      comment: 'دكتور جيد، لكن وقت الانتظار كان طويل قليلاً.',
-      date: '2025-10-24',
-      isVerified: false,
-      sessionType: 'كشف عام',
-      categories: ['احترافية']
-    },
-    {
-      id: 5,
-      patientName: 'سارة أحمد',
-      patientImage: null,
-      rating: 5.0,
-      comment: 'ممتاز في التعامل، شرح مفصل للحالة والعلاج. أنصح به بشدة.',
-      date: '2025-10-23',
-      isVerified: true,
-      sessionType: 'متابعة',
-      categories: ['تواصل ممتاز', 'احترافية']
-    },
-    {
-      id: 6,
-      patientName: 'خالد عبدالله',
-      patientImage: null,
-      rating: 4.5,
-      comment: 'تجربة رائعة، الدكتور متمكن ويعطي وقت كافي للمريض.',
-      date: '2025-10-22',
-      isVerified: true,
-      sessionType: 'كشف عام',
-      categories: ['خبرة عالية', 'تواصل ممتاز']
-    },
-  ]);
+  // Use reviews hook for API integration
+  const {
+    reviews,
+    pagination,
+    filters,
+    loading,
+    isLoadingReply,
+    averageRating,
+    totalReviews,
+    ratingDistribution,
+    setFilter,
+    goToNextPage,
+    goToPreviousPage,
+    replyToReview
+  } = useReviews();
 
-  const [filterRating, setFilterRating] = useState('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [loading] = useState(false);
   
   const filterRef = useRef(null);
 
@@ -98,30 +43,21 @@ const ReviewsPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter reviews
-  const filteredReviews = reviews.filter(review => {
-    const matchesRating = filterRating === 'all' || 
-                         (filterRating === '5' && review.rating === 5) ||
-                         (filterRating === '4' && review.rating >= 4 && review.rating < 5) ||
-                         (filterRating === '3' && review.rating >= 3 && review.rating < 4);
-    
-    return matchesRating;
-  });
-
-  // Calculate stats
-  const totalReviews = reviews.length;
-  const averageRating = reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
-  const fiveStarCount = reviews.filter(r => r.rating === 5).length;
+  // Handle reply to review
+  const handleReplyToReview = async (reviewId, replyText) => {
+    const result = await replyToReview(reviewId, replyText);
+    return result.success;
+  };
 
   // Get filter label
   const getFilterLabel = () => {
     const labels = {
       'all': 'جميع التقييمات',
       '5': '5 نجوم',
-      '4': '4+ نجوم',
+      '4': '4+ نجوم', 
       '3': '3+ نجوم',
     };
-    return labels[filterRating] || 'جميع التقييمات';
+    return labels[filters.minRating?.toString()] || 'جميع التقييمات';
   };
 
   return (
@@ -198,20 +134,20 @@ const ReviewsPage = () => {
                     <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
                       <div className="py-1">
                         <button
-                          onClick={() => { setFilterRating('all'); setIsFilterOpen(false); }}
+                          onClick={() => { setFilter('minRating', null); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-                            filterRating === 'all'
+                            !filters.minRating
                               ? 'bg-teal-50 text-teal-700 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 font-medium'
                           }`}
                         >
                           <span>جميع التقييمات</span>
-                          {filterRating === 'all' && <FaCheck className="w-4 h-4 text-teal-600" />}
+                          {!filters.minRating && <FaCheck className="w-4 h-4 text-teal-600" />}
                         </button>
                         <button
-                          onClick={() => { setFilterRating('5'); setIsFilterOpen(false); }}
+                          onClick={() => { setFilter('minRating', 5); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-                            filterRating === '5'
+                            filters.minRating === 5
                               ? 'bg-teal-50 text-teal-700 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 font-medium'
                           }`}
@@ -220,12 +156,12 @@ const ReviewsPage = () => {
                             <FaStar className="text-teal-500 text-xs" />
                             <span>5 نجوم</span>
                           </div>
-                          {filterRating === '5' && <FaCheck className="w-4 h-4 text-teal-600" />}
+                          {filters.minRating === 5 && <FaCheck className="w-4 h-4 text-teal-600" />}
                         </button>
                         <button
-                          onClick={() => { setFilterRating('4'); setIsFilterOpen(false); }}
+                          onClick={() => { setFilter('minRating', 4); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-                            filterRating === '4'
+                            filters.minRating === 4
                               ? 'bg-teal-50 text-teal-700 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 font-medium'
                           }`}
@@ -234,12 +170,12 @@ const ReviewsPage = () => {
                             <FaStar className="text-teal-500 text-xs" />
                             <span>4+ نجوم</span>
                           </div>
-                          {filterRating === '4' && <FaCheck className="w-4 h-4 text-teal-600" />}
+                          {filters.minRating === 4 && <FaCheck className="w-4 h-4 text-teal-600" />}
                         </button>
                         <button
-                          onClick={() => { setFilterRating('3'); setIsFilterOpen(false); }}
+                          onClick={() => { setFilter('minRating', 3); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-                            filterRating === '3'
+                            filters.minRating === 3
                               ? 'bg-teal-50 text-teal-700 font-bold'
                               : 'text-slate-700 hover:bg-slate-50 font-medium'
                           }`}
@@ -248,7 +184,7 @@ const ReviewsPage = () => {
                             <FaStar className="text-teal-500 text-xs" />
                             <span>3+ نجوم</span>
                           </div>
-                          {filterRating === '3' && <FaCheck className="w-4 h-4 text-teal-600" />}
+                          {filters.minRating === 3 && <FaCheck className="w-4 h-4 text-teal-600" />}
                         </button>
                       </div>
                     </div>
@@ -258,36 +194,38 @@ const ReviewsPage = () => {
             </div>
 
             {/* Rating Distribution */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-6 border border-white/20">
-              <div className="grid grid-cols-5 gap-3">
-                {[5, 4, 3, 2, 1].map(star => {
-                  const count = reviews.filter(r => Math.floor(r.rating) === star).length;
-                  const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-                  
-                  return (
-                    <div key={star} className="flex flex-col items-center">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-white font-bold text-sm">{star}</span>
-                        <FaStar className="text-white text-xs" />
+            {ratingDistribution && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-6 border border-white/20">
+                <div className="grid grid-cols-5 gap-3">
+                  {[5, 4, 3, 2, 1].map(star => {
+                    const count = ratingDistribution[star] || 0;
+                    const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                    
+                    return (
+                      <div key={star} className="flex flex-col items-center">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-white font-bold text-sm">{star}</span>
+                          <FaStar className="text-white text-xs" />
+                        </div>
+                        <div className="w-full bg-white/20 rounded-full h-2 mb-1">
+                          <div 
+                            className="bg-white rounded-full h-2 transition-all duration-300"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-white/80 text-xs font-medium">{count}</span>
                       </div>
-                      <div className="w-full bg-white/20 rounded-full h-2 mb-1">
-                        <div 
-                          className="bg-white rounded-full h-2 transition-all duration-300"
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-white/80 text-xs font-medium">{count}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
         </div>
 
         {/* Loading State */}
-        {loading ? (
+        {loading.reviews ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="bg-white rounded-xl p-5 shadow-sm border border-slate-200 animate-pulse">
@@ -309,7 +247,7 @@ const ReviewsPage = () => {
               </div>
             ))}
           </div>
-        ) : filteredReviews.length === 0 ? (
+        ) : reviews.length === 0 ? (
           /* Empty State */
           <div className="bg-white rounded-2xl p-16 text-center shadow-lg border border-slate-200">
             <div className="w-32 h-32 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
@@ -324,18 +262,48 @@ const ReviewsPage = () => {
           /* Reviews Grid */
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredReviews.map((review) => (
-                <ReviewCard key={review.id} review={review} />
+              {reviews.map((review) => (
+                <ReviewCard 
+                  key={review.id} 
+                  review={review} 
+                  onReply={handleReplyToReview}
+                  isLoadingReply={isLoadingReply}
+                />
               ))}
             </div>
 
+            {/* Pagination */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-8">
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={!pagination.hasPreviousPage}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <span>السابق</span>
+                </button>
+                
+                <span className="text-slate-600 font-medium">
+                  صفحة {pagination.pageNumber} من {pagination.totalPages}
+                </span>
+                
+                <button
+                  onClick={goToNextPage}
+                  disabled={!pagination.hasNextPage}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <span>التالي</span>
+                </button>
+              </div>
+            )}
+
             {/* Results Count */}
-            {filteredReviews.length > 0 && (
+            {reviews.length > 0 && (
               <div className="mt-8 text-center">
                 <div className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-xl shadow-sm border border-slate-200">
                   <FaChartLine className="text-teal-600" />
                   <span className="text-slate-700 font-semibold">
-                    عرض {filteredReviews.length} من {totalReviews} تقييم
+                    عرض {reviews.length} من {totalReviews} تقييم
                   </span>
                 </div>
               </div>

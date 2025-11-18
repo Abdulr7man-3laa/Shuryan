@@ -101,8 +101,16 @@ export const useAuthStore = create(
             user.role = user.role.toLowerCase();
           }
           
+          // Normalize profile image field name
+          if (user && user.profileImage && !user.profileImageUrl) {
+            user.profileImageUrl = user.profileImage;
+            console.log('✅ Normalized profileImage → profileImageUrl:', user.profileImageUrl);
+          }
+          
           console.log('💾 Storing user:', user);
           console.log('💾 Final user.role:', user?.role);
+          console.log('🖼️ Profile Image URL:', user?.profileImageUrl);
+          console.log('🔍 All user properties:', Object.keys(user || {}));
           
           set({
             user: user,
@@ -175,6 +183,12 @@ export const useAuthStore = create(
           if (user && user.roles && Array.isArray(user.roles)) {
             user.role = user.roles[0];
             console.log('✅ Normalized role from array:', user.roles, '→', user.role);
+          }
+          
+          // Normalize profile image field name
+          if (user && user.profileImage && !user.profileImageUrl) {
+            user.profileImageUrl = user.profileImage;
+            console.log('✅ Normalized profileImage → profileImageUrl:', user.profileImageUrl);
           }
           
           set({

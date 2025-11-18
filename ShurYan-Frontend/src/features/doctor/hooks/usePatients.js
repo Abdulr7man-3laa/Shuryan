@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { usePatientsStore } from '../stores/patientsStore';
 
 /**
@@ -36,15 +36,18 @@ export const usePatients = ({
     reset,
   } = usePatientsStore();
 
-  // Auto fetch on mount
+  // Auto fetch on mount - only once
   useEffect(() => {
     if (autoFetch) {
       fetchPatients(pageNumber, pageSize);
     }
-  }, [autoFetch, pageNumber, pageSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch on mount
 
-  // Get filtered patients
-  const filteredPatients = getFilteredPatients();
+  // Memoize filtered patients to prevent unnecessary recalculations
+  const filteredPatients = useMemo(() => {
+    return getFilteredPatients();
+  }, [patients, searchTerm, filterStatus, sortBy, getFilteredPatients]);
 
   return {
     // State

@@ -10,6 +10,7 @@ export const useAllAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statistics, setStatistics] = useState(null); // ✅ Add statistics state
   const [pagination, setPagination] = useState({
     pageNumber: 1,
     pageSize: 12, // ✅ Backend pagination: 12 items per page
@@ -43,10 +44,11 @@ export const useAllAppointments = () => {
       console.log('═══════════════════════════════════════');
       
       if (response.isSuccess && response.data) {
-        const { data: appointmentsData, ...paginationData } = response.data;
+        const { data: appointmentsData, statistics: statsData, ...paginationData } = response.data;
         
         console.log('📋 ALL Appointments Data (NO FILTER):', appointmentsData);
         console.log('📋 Count:', appointmentsData?.length);
+        console.log('📊 Statistics from API:', statsData); // ✅ Log statistics
         
         if (!appointmentsData || appointmentsData.length === 0) {
           console.warn('⚠️ API returned EMPTY appointments array!');
@@ -55,6 +57,7 @@ export const useAllAppointments = () => {
             ...paginationData,
             totalCount: 0,
           });
+          setStatistics(statsData || null); // ✅ Set statistics even if empty
           setLoading(false);
           return;
         }
@@ -65,6 +68,7 @@ export const useAllAppointments = () => {
         
         setAppointments(mappedAppointments);
         setPagination(paginationData);
+        setStatistics(statsData || null); // ✅ Set statistics from API
       } else {
         console.error('❌ Response validation failed:', {
           isSuccess: response.isSuccess,
@@ -162,6 +166,7 @@ export const useAllAppointments = () => {
     loading,
     error,
     pagination,
+    statistics, // ✅ Return statistics
     refreshAppointments: fetchAppointments,
     goToNextPage,
     goToPreviousPage,

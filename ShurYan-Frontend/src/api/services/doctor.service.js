@@ -395,6 +395,16 @@ class DoctorService {
     return response.data;
   }
 
+  /**
+   * Remove specific partner type (pharmacy or laboratory)
+   * @param {string} partnerType - 'pharmacy' or 'laboratory'
+   * @returns {Promise} Deletion confirmation
+   */
+  async removeSpecificPartner(partnerType) {
+    const response = await apiClient.delete(`/Doctors/me/partner/suggested?type=${partnerType}`);
+    return response.data;
+  }
+
   // ==================== Dashboard APIs ====================
 
   /**

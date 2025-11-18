@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { 
   FaUser, FaPhone, FaCalendarAlt, FaStethoscope,
   FaFileMedical, FaPrescriptionBottleAlt, FaFlask,
@@ -161,4 +161,4 @@ const PatientCard = ({ patient, onMedicalRecordClick, onPrescriptionClick, onLab
   );
 };
 
-export default PatientCard;
+export default memo(PatientCard);

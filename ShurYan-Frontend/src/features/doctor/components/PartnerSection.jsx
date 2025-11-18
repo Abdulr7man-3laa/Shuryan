@@ -1,29 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePartner } from '../hooks/usePartner';
 import { 
   FaHandshake, 
   FaFlask, 
   FaPrescriptionBottle,
   FaInfoCircle,
-  FaSearch,
-  FaTimes,
-  FaMapMarkerAlt,
-  FaStar,
-  FaCheckCircle,
   FaTrash
 } from 'react-icons/fa';
+import PartnerAutocomplete from './PartnerAutocomplete';
 
 /**
- * PartnerSection Component
- * 
- * Clean partner suggestion system with modern UI
+ * PartnerSection Component - Updated with MUI Autocomplete
  * 
  * Features:
- * - Suggest pharmacy AND/OR laboratory (max 1 of each)
- * - Autocomplete search with real-time filtering
- * - Side-by-side cards layout
- * - Optimistic updates with rollback
- * - Click outside to close dropdowns
+ * - MUI Autocomplete with RTL support
+ * - Real-time API integration (NO MOCK DATA)
+ * - Auto-save functionality
+ * - Clean UI with partner cards
  * 
  * @component
  */
@@ -37,169 +30,113 @@ const PartnerSection = () => {
     error,
     success,
     suggestPartner,
-    removePartner,
+    removeSpecificPartner,
     clearErrors,
     hasPartner,
-    refreshAll,
   } = usePartner({ autoFetch: true });
 
-  // Local state
+  // Local state for selected partners
   const [selectedPharmacy, setSelectedPharmacy] = useState(null);
   const [selectedLaboratory, setSelectedLaboratory] = useState(null);
-  const [searchPharmacy, setSearchPharmacy] = useState('');
-  const [searchLaboratory, setSearchLaboratory] = useState('');
-  const [showPharmacyDropdown, setShowPharmacyDropdown] = useState(false);
-  const [showLaboratoryDropdown, setShowLaboratoryDropdown] = useState(false);
-  
-  // Pagination for dropdown
-  const [pharmacyDisplayCount, setPharmacyDisplayCount] = useState(5);
-  const [laboratoryDisplayCount, setLaboratoryDisplayCount] = useState(5);
-  
-  const pharmacyRef = useRef(null);
-  const laboratoryRef = useRef(null);
 
-  // Close dropdowns on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (pharmacyRef.current && !pharmacyRef.current.contains(e.target)) {
-        setShowPharmacyDropdown(false);
-      }
-      if (laboratoryRef.current && !laboratoryRef.current.contains(e.target)) {
-        setShowLaboratoryDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Auto-save effect - saves after 3 seconds of inactivity
-  useEffect(() => {
-    // Skip if no selection
-    if (!selectedPharmacy && !selectedLaboratory) {
-      return;
+  // Handle pharmacy suggestion
+  const handleSuggestPharmacy = useCallback(async () => {
+    if (!selectedPharmacy) return;
+    
+    try {
+      // Include existing laboratory if present
+      const partnerData = {
+        pharmacyId: selectedPharmacy.id,
+        ...(suggestedLaboratory && { laboratoryId: suggestedLaboratory.id })
+      };
+      await suggestPartner(partnerData);
+      setSelectedPharmacy(null); // Clear selection after successful suggestion
+    } catch (error) {
+      console.error('Error suggesting pharmacy:', error);
     }
+  }, [selectedPharmacy, suggestPartner, suggestedLaboratory]);
 
-    // Check if selection changed from current partners
-    const pharmacyChanged = selectedPharmacy?.id !== suggestedPharmacy?.id;
-    const laboratoryChanged = selectedLaboratory?.id !== suggestedLaboratory?.id;
-
-    if (!pharmacyChanged && !laboratoryChanged) {
-      return;
+  // Handle laboratory suggestion
+  const handleSuggestLaboratory = useCallback(async () => {
+    if (!selectedLaboratory) return;
+    
+    try {
+      // Include existing pharmacy if present
+      const partnerData = {
+        laboratoryId: selectedLaboratory.id,
+        ...(suggestedPharmacy && { pharmacyId: suggestedPharmacy.id })
+      };
+      await suggestPartner(partnerData);
+      setSelectedLaboratory(null); // Clear selection after successful suggestion
+    } catch (error) {
+      console.error('Error suggesting laboratory:', error);
     }
+  }, [selectedLaboratory, suggestPartner, suggestedPharmacy]);
 
-    // Auto-save after 3 seconds
-    const timer = setTimeout(async () => {
-      try {
-        const partnerData = {};
-        if (selectedPharmacy) partnerData.pharmacyId = selectedPharmacy.id;
-        if (selectedLaboratory) partnerData.laboratoryId = selectedLaboratory.id;
+  // Auto-suggest when partner is selected
+  useEffect(() => {
+    if (selectedPharmacy && !suggestedPharmacy) {
+      handleSuggestPharmacy();
+    }
+  }, [selectedPharmacy, suggestedPharmacy, handleSuggestPharmacy]);
 
-        await suggestPartner(partnerData);
-        
-        // Reset search after successful save
-        setSearchPharmacy('');
-        setSearchLaboratory('');
-      } catch (err) {
-        console.error('Auto-save error:', err);
-      }
-    }, 3000);
+  useEffect(() => {
+    if (selectedLaboratory && !suggestedLaboratory) {
+      handleSuggestLaboratory();
+    }
+  }, [selectedLaboratory, suggestedLaboratory, handleSuggestLaboratory]);
 
-    return () => clearTimeout(timer);
-  }, [selectedPharmacy, selectedLaboratory]);
+  // Auto-clear success messages
+  useEffect(() => {
+    if (success.partner) {
+      const timer = setTimeout(() => {
+        clearErrors();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success.partner, clearErrors]);
 
-  // Handle remove individual partner
+  // Handle remove pharmacy
   const handleRemovePharmacy = async () => {
     if (!confirm('هل أنت متأكد من إزالة الصيدلية المقترحة؟')) return;
     
     try {
-      // If we have both, keep laboratory only
-      if (suggestedLaboratory) {
-        await suggestPartner({ laboratoryId: suggestedLaboratory.id });
-      } else {
-        // If only pharmacy, remove all
-        await removePartner();
-      }
-      
-      // Reset local state and refresh to update UI
-      setSelectedPharmacy(null);
-      await refreshAll();
-    } catch (err) {
-      console.error('Error removing pharmacy:', err);
+      // Use specific endpoint to remove only pharmacy
+      await removeSpecificPartner('pharmacy');
+    } catch (error) {
+      console.error('Error removing pharmacy:', error);
     }
   };
 
+  // Handle remove laboratory
   const handleRemoveLaboratory = async () => {
     if (!confirm('هل أنت متأكد من إزالة المعمل المقترح؟')) return;
     
     try {
-      // If we have both, keep pharmacy only
-      if (suggestedPharmacy) {
-        await suggestPartner({ pharmacyId: suggestedPharmacy.id });
-      } else {
-        // If only laboratory, remove all
-        await removePartner();
-      }
-      
-      // Reset local state and refresh to update UI
-      setSelectedLaboratory(null);
-      await refreshAll();
-    } catch (err) {
-      console.error('Error removing laboratory:', err);
+      // Use specific endpoint to remove only laboratory
+      await removeSpecificPartner('laboratory');
+    } catch (error) {
+      console.error('Error removing laboratory:', error);
     }
   };
 
-  const resetForm = () => {
-    setSelectedPharmacy(null);
-    setSelectedLaboratory(null);
-    setSearchPharmacy('');
-    setSearchLaboratory('');
-    setPharmacyDisplayCount(5);
-    setLaboratoryDisplayCount(5);
-    clearErrors();
-  };
-
-  // Filter partners
-  const filterPartners = (partners, query) => {
-    // Ensure partners is an array
-    if (!Array.isArray(partners)) return [];
-    if (!query) return partners;
-    
-    const q = query.toLowerCase();
-    return partners.filter(p => 
-      p.name?.toLowerCase().includes(q) || 
-      p.address?.toLowerCase().includes(q)
-    );
-  };
-
-  const filteredPharmacies = filterPartners(availablePharmacies, searchPharmacy);
-  const filteredLaboratories = filterPartners(availableLaboratories, searchLaboratory);
-
-  // Debug: Log available data
-  useEffect(() => {
-    console.log('🏥 Available Pharmacies:', availablePharmacies);
-    console.log('🔬 Available Laboratories:', availableLaboratories);
-  }, [availablePharmacies, availableLaboratories]);
-
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-br from-teal-500 to-teal-600 px-6 py-5">
+      <div className="bg-gradient-to-r from-teal-500 via-teal-600 to-emerald-600 p-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-              <FaHandshake className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <FaHandshake className="text-white text-xl" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">اقتراح شريك</h3>
-              <p className="text-white/80 text-sm">
-                اقترح صيدلية و/أو معمل للمرضى
-              </p>
+              <h2 className="text-2xl font-black text-white">اقتراح شريك</h2>
+              <p className="text-teal-100 text-sm">اختر صيدلية و/أو معمل للتعاون معك</p>
             </div>
           </div>
-          
-          {/* Actions - Removed for auto-save */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <FaInfoCircle className="text-teal-200 text-sm" />
+            <span className="text-teal-100 text-xs">يمكنك اختيار شريك واحد من كل نوع</span>
           </div>
         </div>
       </div>
@@ -222,339 +159,123 @@ const PartnerSection = () => {
           </div>
         )}
 
-        {/* Current Partners - Always visible with remove buttons */}
+        {/* Current Partners */}
         {hasPartner && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {suggestedPharmacy && (
-              <PartnerCard
-                partner={suggestedPharmacy}
-                type="pharmacy"
-                icon={FaPrescriptionBottle}
-                gradient="from-green-50 to-emerald-50"
-                iconBg="bg-green-100"
-                iconColor="text-green-600"
-                borderColor="border-green-200"
-                title="الصيدلية المقترحة"
-                onRemove={handleRemovePharmacy}
-              />
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                      <FaPrescriptionBottle className="text-white text-sm" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-800">الصيدلية المقترحة</h3>
+                      <p className="text-sm text-slate-600">شريك حالي</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemovePharmacy}
+                    className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors"
+                    title="إزالة الصيدلية"
+                  >
+                    <FaTrash className="text-red-600 text-xs" />
+                  </button>
+                </div>
+                <div className="bg-white/50 rounded-xl p-4">
+                  <p className="font-bold text-slate-800">{suggestedPharmacy.name}</p>
+                  {suggestedPharmacy.address && (
+                    <p className="text-sm text-slate-600 mt-1">{suggestedPharmacy.address}</p>
+                  )}
+                </div>
+              </div>
             )}
             
             {suggestedLaboratory && (
-              <PartnerCard
-                partner={suggestedLaboratory}
-                type="laboratory"
-                icon={FaFlask}
-                gradient="from-blue-50 to-cyan-50"
-                iconBg="bg-blue-100"
-                iconColor="text-blue-600"
-                borderColor="border-blue-200"
-                title="المعمل المقترح"
-                onRemove={handleRemoveLaboratory}
-              />
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                      <FaFlask className="text-white text-sm" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-800">المعمل المقترح</h3>
+                      <p className="text-sm text-slate-600">شريك حالي</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemoveLaboratory}
+                    className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors"
+                    title="إزالة المعمل"
+                  >
+                    <FaTrash className="text-red-600 text-xs" />
+                  </button>
+                </div>
+                <div className="bg-white/50 rounded-xl p-4">
+                  <p className="font-bold text-slate-800">{suggestedLaboratory.name}</p>
+                  {suggestedLaboratory.address && (
+                    <p className="text-sm text-slate-600 mt-1">{suggestedLaboratory.address}</p>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         )}
 
-        {/* Partner Selectors - Show only if not already suggested */}
+        {/* Partner Selectors */}
         {(!suggestedPharmacy || !suggestedLaboratory) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Pharmacy Selector - Show only if no pharmacy suggested */}
+            {/* Pharmacy Selector */}
             {!suggestedPharmacy && (
-              <PartnerSelector
-                ref={pharmacyRef}
+              <PartnerAutocomplete
                 title="اقتراح صيدلية"
                 subtitle="اختر صيدلية من الصيدليات المتاحة"
                 icon={FaPrescriptionBottle}
                 gradient="from-green-50 to-emerald-50"
                 iconBg="bg-green-500"
-                searchBorder="border-green-200"
-                focusBorder="focus:border-green-400"
-                focusRing="focus:ring-green-100"
-                hoverBg="hover:bg-green-50"
-                dropdownBorder="border-green-200"
-                selectedBorder="border-green-300"
-                emptyBorder="border-green-300"
-                emptyColor="text-green-300"
-                searchValue={searchPharmacy}
-                onSearchChange={(e) => {
-                  setSearchPharmacy(e.target.value);
-                  setShowPharmacyDropdown(true);
-                  setPharmacyDisplayCount(5); // Reset count on search
-                }}
-                onSearchFocus={() => setShowPharmacyDropdown(true)}
-                showDropdown={showPharmacyDropdown}
-                filteredPartners={filteredPharmacies}
-                displayCount={pharmacyDisplayCount}
-                onLoadMore={() => setPharmacyDisplayCount(prev => prev + 5)}
-                onSelectPartner={(p) => {
-                  setSelectedPharmacy(p);
-                  setSearchPharmacy('');
-                  setShowPharmacyDropdown(false);
-                  setPharmacyDisplayCount(5);
-                }}
-                selectedPartner={selectedPharmacy}
-                onRemovePartner={() => setSelectedPharmacy(null)}
+                options={availablePharmacies}
+                value={selectedPharmacy}
+                onChange={setSelectedPharmacy}
+                loading={loading.pharmacies}
+                placeholder="ابحث عن صيدلية..."
+                type="pharmacy"
               />
             )}
 
-            {/* Laboratory Selector - Show only if no laboratory suggested */}
+            {/* Laboratory Selector */}
             {!suggestedLaboratory && (
-              <PartnerSelector
-                ref={laboratoryRef}
+              <PartnerAutocomplete
                 title="اقتراح معمل"
                 subtitle="اختر معمل من المعامل المتاحة"
                 icon={FaFlask}
                 gradient="from-blue-50 to-cyan-50"
                 iconBg="bg-blue-500"
-                searchBorder="border-blue-200"
-                focusBorder="focus:border-blue-400"
-                focusRing="focus:ring-blue-100"
-                hoverBg="hover:bg-blue-50"
-                dropdownBorder="border-blue-200"
-                selectedBorder="border-blue-300"
-                emptyBorder="border-blue-300"
-                emptyColor="text-blue-300"
-                searchValue={searchLaboratory}
-                onSearchChange={(e) => {
-                  setSearchLaboratory(e.target.value);
-                  setShowLaboratoryDropdown(true);
-                  setLaboratoryDisplayCount(5); // Reset count on search
-                }}
-                onSearchFocus={() => setShowLaboratoryDropdown(true)}
-                showDropdown={showLaboratoryDropdown}
-                filteredPartners={filteredLaboratories}
-                displayCount={laboratoryDisplayCount}
-                onLoadMore={() => setLaboratoryDisplayCount(prev => prev + 5)}
-                onSelectPartner={(p) => {
-                  setSelectedLaboratory(p);
-                  setSearchLaboratory('');
-                  setShowLaboratoryDropdown(false);
-                  setLaboratoryDisplayCount(5);
-                }}
-                selectedPartner={selectedLaboratory}
-                onRemovePartner={() => setSelectedLaboratory(null)}
+                options={availableLaboratories}
+                value={selectedLaboratory}
+                onChange={setSelectedLaboratory}
+                loading={loading.laboratories}
+                placeholder="ابحث عن معمل..."
+                type="laboratory"
               />
             )}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!hasPartner && (!availablePharmacies.length && !availableLaboratories.length) && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaHandshake className="text-slate-400 text-xl" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-700 mb-2">لا توجد شركاء متاحين</h3>
+            <p className="text-slate-500 text-sm">
+              لا توجد صيدليات أو معامل متاحة للتعاون في الوقت الحالي
+            </p>
           </div>
         )}
       </div>
     </div>
   );
 };
-
-// ==================== Sub-Components ====================
-
-/**
- * PartnerCard - Display suggested partner with remove button
- */
-const PartnerCard = ({ partner, icon: Icon, gradient, iconBg, iconColor, borderColor, title, onRemove }) => (
-  <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-6 border-2 ${borderColor} relative`}>
-    <h4 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-      <Icon className={`w-5 h-5 ${iconColor}`} />
-      {title}
-    </h4>
-    
-    {/* Remove Button */}
-    <button
-      onClick={onRemove}
-      className="absolute top-4 left-4 p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-md hover:shadow-lg"
-      title="إزالة الشراكة"
-    >
-      <FaTrash className="w-4 h-4" />
-    </button>
-    
-    <div className={`bg-white border-2 ${borderColor} rounded-xl p-5`}>
-      <div className="flex items-start gap-4">
-        <div className={`w-14 h-14 ${iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
-          <Icon className={`w-7 h-7 ${iconColor}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h5 className="font-bold text-lg text-slate-800 mb-2">{partner.name}</h5>
-          {partner.rating && (
-            <div className="flex items-center gap-1 mb-2">
-              <FaStar className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm font-medium text-slate-700">{partner.rating}</span>
-            </div>
-          )}
-          {partner.address && (
-            <div className="flex items-center gap-2">
-              <FaMapMarkerAlt className="w-4 h-4 text-slate-400" />
-              <span className="text-sm text-slate-600">{partner.address}</span>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-/**
- * PartnerSelector - Search and select partner
- */
-const PartnerSelector = React.forwardRef(({
-  title,
-  subtitle,
-  icon: Icon,
-  gradient,
-  iconBg,
-  searchBorder,
-  focusBorder,
-  focusRing,
-  hoverBg,
-  dropdownBorder,
-  selectedBorder,
-  emptyBorder,
-  emptyColor,
-  searchValue,
-  onSearchChange,
-  onSearchFocus,
-  showDropdown,
-  filteredPartners,
-  displayCount,
-  onLoadMore,
-  onSelectPartner,
-  selectedPartner,
-  onRemovePartner,
-}, ref) => {
-  const dropdownRef = useRef(null);
-  
-  // Handle scroll to load more
-  const handleScroll = (e) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.target;
-    // When scrolled to bottom (with 10px threshold)
-    if (scrollHeight - scrollTop <= clientHeight + 10) {
-      if (displayCount < filteredPartners.length) {
-        onLoadMore();
-      }
-    }
-  };
-  
-  return (
-  <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-6 border-2 ${searchBorder}`}>
-    {/* Header */}
-    <div className="flex items-center gap-3 mb-4">
-      <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center shadow-lg`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <div>
-        <h4 className="text-lg font-bold text-slate-800">{title}</h4>
-        <p className="text-xs text-slate-600">{subtitle}</p>
-      </div>
-    </div>
-
-    {/* Search */}
-    <div className="relative mb-4" ref={ref}>
-      <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
-      <input
-        type="text"
-        value={searchValue}
-        onChange={onSearchChange}
-        onFocus={onSearchFocus}
-        placeholder="ابحث بالاسم أو الموقع"
-        className={`w-full pr-10 pl-4 py-3 bg-white border-2 ${searchBorder} rounded-xl ${focusBorder} ${focusRing} transition-all text-sm`}
-      />
-
-      {/* Dropdown */}
-      {showDropdown && (
-        <div 
-          ref={dropdownRef}
-          onScroll={handleScroll}
-          className={`absolute top-full left-0 right-0 mt-2 bg-white border-2 ${dropdownBorder} rounded-xl shadow-xl max-h-64 overflow-y-auto z-20`}
-        >
-          {filteredPartners.length > 0 ? (
-            <>
-              {filteredPartners.slice(0, displayCount).map((partner) => (
-              <button
-                key={partner.id}
-                onClick={() => onSelectPartner(partner)}
-                className={`w-full px-4 py-3 ${hoverBg} transition-colors text-right border-b ${dropdownBorder} last:border-0`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 ${iconBg.replace('500', '100')} rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                    <Icon className={`w-5 h-5 ${iconBg.replace('bg-', 'text-').replace('500', '600')}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm truncate">{partner.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {partner.rating && (
-                        <div className="flex items-center gap-1">
-                          <FaStar className="w-3 h-3 text-yellow-500" />
-                          <span className="text-xs text-slate-600">{partner.rating}</span>
-                        </div>
-                      )}
-                      {partner.address && (
-                        <div className="flex items-center gap-1">
-                          <FaMapMarkerAlt className="w-3 h-3 text-slate-400" />
-                          <span className="text-xs text-slate-500 truncate">{partner.address}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </button>
-              ))}
-              
-              {/* Load More Button */}
-              {displayCount < filteredPartners.length && (
-                <button
-                  onClick={onLoadMore}
-                  className={`w-full px-4 py-3 text-center ${hoverBg} transition-colors border-t-2 ${dropdownBorder} text-sm font-medium text-slate-600`}
-                >
-                  عرض المزيد ({filteredPartners.length - displayCount} متبقي)
-                </button>
-              )}
-            </>
-          ) : (
-            <div className="px-4 py-6 text-center text-slate-500">
-              <p className="text-sm">لا توجد نتائج</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-
-    {/* Selected Partner */}
-    {selectedPartner ? (
-      <div className={`bg-white border-2 ${selectedBorder} rounded-xl p-4`}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className={`w-12 h-12 ${iconBg.replace('500', '100')} rounded-xl flex items-center justify-center flex-shrink-0`}>
-              <Icon className={`w-6 h-6 ${iconBg.replace('bg-', 'text-').replace('500', '600')}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-800 truncate">{selectedPartner.name}</p>
-              {selectedPartner.rating && (
-                <div className="flex items-center gap-1 mt-1">
-                  <FaStar className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm font-medium text-slate-700">{selectedPartner.rating}</span>
-                </div>
-              )}
-              {selectedPartner.address && (
-                <div className="flex items-center gap-1 mt-1">
-                  <FaMapMarkerAlt className="w-3 h-3 text-slate-400" />
-                  <span className="text-xs text-slate-600 truncate">{selectedPartner.address}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={onRemovePartner}
-            className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
-          >
-            <FaTimes className="w-4 h-4 text-red-600" />
-          </button>
-        </div>
-      </div>
-    ) : (
-      <div className={`bg-white/50 border-2 border-dashed ${emptyBorder} rounded-xl p-6 text-center`}>
-        <Icon className={`w-12 h-12 ${emptyColor} mx-auto mb-2`} />
-        <p className="text-sm text-slate-500">لم يتم الاختيار بعد</p>
-      </div>
-    )}
-  </div>
-  );
-});
-
-PartnerSelector.displayName = 'PartnerSelector';
 
 export default PartnerSection;

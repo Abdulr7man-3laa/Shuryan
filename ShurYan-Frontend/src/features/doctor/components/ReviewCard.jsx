@@ -1,15 +1,24 @@
-import React from 'react';
-import { FaStar, FaStarHalfAlt, FaRegStar, FaQuoteRight, FaCheckCircle } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { 
+  FaStar, FaStarHalfAlt, FaRegStar, FaQuoteRight, FaCheckCircle, 
+  FaReply, FaClock, FaEdit, FaEye, FaHeart, FaThumbsUp,
+  FaComments, FaBroom, FaDollarSign, FaInfoCircle
+} from 'react-icons/fa';
+import RatingDetailsModal from './RatingDetailsModal';
 
 /**
  * ReviewCard Component - Premium Design
- * Elegant card for displaying patient reviews and ratings
+ * Elegant card for displaying patient reviews based on new backend model
+ * Shows multiple rating categories and doctor reply functionality
  */
-const ReviewCard = ({ review }) => {
+const ReviewCard = ({ review, onReply, isLoadingReply }) => {
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   // Get patient initials
   const getInitials = () => {
-    if (!review.patientName) return '؟';
-    const names = review.patientName.split(' ');
+    if (!review.patient?.fullName && !review.patientName) return '؟';
+    const name = review.patient?.fullName || review.patientName;
+    const names = name.split(' ');
     if (names.length >= 2) {
       return names[0].charAt(0) + names[names.length - 1].charAt(0);
     }
@@ -26,26 +35,28 @@ const ReviewCard = ({ review }) => {
     // Full stars
     for (let i = 0; i < fullStars; i++) {
       stars.push(
-        <FaStar key={`full-${i}`} className="text-amber-400 text-sm" />
+        <FaStar key={`full-${i}`} className="text-amber-400 text-xs" />
       );
     }
 
     // Half star
     if (hasHalfStar) {
       stars.push(
-        <FaStarHalfAlt key="half" className="text-amber-400 text-sm" />
+        <FaStarHalfAlt key="half" className="text-amber-400 text-xs" />
       );
     }
 
     // Empty stars
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
-        <FaRegStar key={`empty-${i}`} className="text-amber-400 text-sm" />
+        <FaRegStar key={`empty-${i}`} className="text-amber-400 text-xs" />
       );
     }
 
     return stars;
   };
+
+
 
   // Format date
   const formatDate = (dateString) => {
@@ -58,101 +69,111 @@ const ReviewCard = ({ review }) => {
     });
   };
 
+  // Calculate average rating
+  const averageRating = review.averageRating || (
+    (review.overallSatisfaction + review.waitingTime + review.communicationQuality + 
+     review.clinicCleanliness + review.valueForMoney) / 5
+  );
+
+  // Get patient name
+  const patientName = review.isAnonymous 
+    ? 'مريض مجهول' 
+    : (review.patient?.fullName || review.patientName || 'مريض');
+
   return (
-    <article className="group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200/80 overflow-hidden">
+    <article className="group relative bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200/80 overflow-hidden">
       {/* Subtle background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50/20 to-white"></div>
       
       {/* Accent bar */}
       <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-teal-500 to-teal-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-      <div className="relative p-5">
-        {/* Header - Patient Info & Rating */}
+      <div className="relative p-6">
+        {/* Header - Patient Info & Overall Rating */}
         <div className="flex items-start justify-between mb-4">
           {/* Patient Info */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              {review.patientImage ? (
+              {review.patient?.profileImageUrl ? (
                 <img
-                  src={review.patientImage}
-                  alt={review.patientName}
-                  className="w-12 h-12 rounded-lg object-cover ring-1 ring-slate-200 group-hover:ring-teal-400 transition-all duration-300"
+                  src={review.patient.profileImageUrl}
+                  alt={patientName}
+                  className="w-14 h-14 rounded-xl object-cover ring-2 ring-slate-200 group-hover:ring-teal-400 transition-all duration-300"
                 />
               ) : (
-                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center text-white text-base font-bold ring-1 ring-slate-200 group-hover:ring-teal-400 transition-all duration-300">
+                <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center text-white text-lg font-bold ring-2 ring-slate-200 group-hover:ring-teal-400 transition-all duration-300">
                   {getInitials()}
                 </div>
               )}
-              {/* Verified badge */}
-              {review.isVerified && (
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <FaCheckCircle className="text-white text-[8px]" />
+              {/* Anonymous badge */}
+              {review.isAnonymous && (
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-slate-500 rounded-full border-2 border-white flex items-center justify-center">
+                  <FaEye className="text-white text-[10px]" />
                 </div>
               )}
             </div>
 
             {/* Name & Date */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-slate-900 truncate group-hover:text-teal-600 transition-colors">
-                {review.patientName}
+              <h3 className="text-base font-bold text-slate-900 truncate group-hover:text-teal-600 transition-colors">
+                {patientName}
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                {formatDate(review.date)}
+              <p className="text-sm text-slate-500 font-medium">
+                {formatDate(review.createdAt || review.date)}
               </p>
+              {review.isEdited && (
+                <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                  <FaEdit className="text-[10px]" />
+                  تم التعديل
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Rating Badge */}
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-              <FaStar className="text-amber-500 text-xs" />
-              <span className="text-sm font-bold text-amber-700">{review.rating.toFixed(1)}</span>
-            </div>
-            <div className="flex items-center gap-0.5">
-              {renderStars(review.rating)}
+          {/* Overall Rating Badge */}
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100 px-3 py-2 rounded-xl border border-amber-200 shadow-sm">
+              <FaStar className="text-amber-500 text-sm" />
+              <span className="text-lg font-black text-amber-700">{averageRating.toFixed(1)}</span>
             </div>
           </div>
         </div>
 
-        {/* Review Text */}
+        {/* Review Comment */}
         {review.comment && (
-          <div className="relative mb-3">
-            <div className="absolute top-0 right-0 text-amber-200">
-              <FaQuoteRight className="text-2xl opacity-50" />
+          <div className="relative mb-6 mt-4">
+            <div className="absolute top-0 right-0 text-teal-200">
+              <FaQuoteRight className="text-xl opacity-50" />
             </div>
-            <p className="text-sm text-slate-700 leading-relaxed pr-8 line-clamp-3">
+            <p className="text-sm text-slate-700 leading-relaxed pr-6 line-clamp-3">
               {review.comment}
             </p>
           </div>
         )}
 
-        {/* Review Categories (if available) */}
-        {review.categories && review.categories.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {review.categories.map((category, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-slate-50 text-slate-600 text-[10px] font-semibold rounded border border-slate-200"
-              >
-                {category}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Footer - Session Type */}
-        {review.sessionType && (
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-teal-500 rounded-full"></div>
-              <span className="text-xs text-slate-600 font-medium">
-                {review.sessionType}
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Details Button - Full Width */}
+        <div className="mb-1 mt-6">
+          <button
+            onClick={() => setShowDetailsModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl hover:from-teal-100 hover:to-emerald-100 hover:border-teal-300 transition-all duration-200 hover:scale-[1.02]"
+          >
+            <FaInfoCircle className="text-teal-500 text-sm" />
+            <span className="text-sm font-semibold text-teal-700">
+              عرض التفاصيل
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Rating Details Modal */}
+      <RatingDetailsModal
+        review={review}
+        isOpen={showDetailsModal}
+        onClose={() => setShowDetailsModal(false)}
+        onReply={onReply}
+        isLoadingReply={isLoadingReply}
+      />
     </article>
   );
 };

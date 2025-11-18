@@ -87,10 +87,6 @@ export const usePartnerStore = create(
 
           try {
             const response = await doctorService.getAvailablePharmacies(pageNumber, pageSize);
-            console.log('📦 Pharmacies API Response:', response);
-            console.log('📦 response.data:', response.data);
-            console.log('📦 response.data.items:', response.data?.items);
-            console.log('📦 Object.keys(response.data):', Object.keys(response.data || {}));
             
             // Handle pagination response structure
             let pharmacies = [];
@@ -106,9 +102,6 @@ export const usePartnerStore = create(
                           [];
             }
             
-            console.log('✅ Parsed Pharmacies (array):', pharmacies);
-            console.log('✅ Pharmacies length:', pharmacies.length);
-            console.log('✅ Is Array?', Array.isArray(pharmacies));
 
             set({
               availablePharmacies: pharmacies,
@@ -138,10 +131,6 @@ export const usePartnerStore = create(
 
           try {
             const response = await doctorService.getAvailableLaboratories(pageNumber, pageSize);
-            console.log('📦 Laboratories API Response:', response);
-            console.log('📦 response.data:', response.data);
-            console.log('📦 response.data.items:', response.data?.items);
-            console.log('📦 Object.keys(response.data):', Object.keys(response.data || {}));
             
             // Handle pagination response structure
             let laboratories = [];
@@ -157,9 +146,6 @@ export const usePartnerStore = create(
                             [];
             }
             
-            console.log('✅ Parsed Laboratories (array):', laboratories);
-            console.log('✅ Laboratories length:', laboratories.length);
-            console.log('✅ Is Array?', Array.isArray(laboratories));
 
             set({
               availableLaboratories: laboratories,
@@ -183,8 +169,11 @@ export const usePartnerStore = create(
          * @param {Object} partnerData - Partner data
          * @param {string} [partnerData.pharmacyId] - Pharmacy ID (optional)
          * @param {string} [partnerData.laboratoryId] - Laboratory ID (optional)
+         * @param {Object} [options] - Additional options
+         * @param {boolean} [options.isRemoving] - Whether this is a removal operation
+         * @param {string} [options.removedType] - Type of partner being removed
          */
-        suggestPartner: async (partnerData) => {
+        suggestPartner: async (partnerData, options = {}) => {
           // Save previous state for rollback
           const previousPharmacy = get().suggestedPharmacy;
           const previousLaboratory = get().suggestedLaboratory;
@@ -196,16 +185,23 @@ export const usePartnerStore = create(
           }));
 
           try {
-            const response = await doctorService.suggestPartner(partnerData);
+            await doctorService.suggestPartner(partnerData);
             
             // Refresh to get updated data from server
             await get().fetchSuggestedPartner();
+
+            // Set appropriate success message based on operation type
+            let successMessage = 'تم حفظ الشركاء المقترحين بنجاح';
+            if (options.isRemoving) {
+              const removedTypeArabic = options.removedType === 'pharmacy' ? 'الصيدلية' : 'المعمل';
+              successMessage = `تم إزالة ${removedTypeArabic} المقترحة بنجاح`;
+            }
 
             set((state) => ({
               loading: { ...state.loading, suggesting: false },
               success: { 
                 ...state.success, 
-                partner: 'تم حفظ الشركاء المقترحين بنجاح' 
+                partner: successMessage
               },
             }));
 
@@ -224,6 +220,58 @@ export const usePartnerStore = create(
               error: { 
                 ...get().error, 
                 partner: error.response?.data?.message || 'فشل اقتراح الشريك' 
+              },
+            });
+            
+            throw error;
+          }
+        },
+
+        /**
+         * Remove specific partner type
+         * @param {string} partnerType - 'pharmacy' or 'laboratory'
+         */
+        removeSpecificPartner: async (partnerType) => {
+          // Save previous state for rollback
+          const previousPharmacy = get().suggestedPharmacy;
+          const previousLaboratory = get().suggestedLaboratory;
+
+          // Optimistic update - remove specific partner
+          set((state) => ({
+            ...(partnerType === 'pharmacy' && { suggestedPharmacy: null }),
+            ...(partnerType === 'laboratory' && { suggestedLaboratory: null }),
+            loading: { ...state.loading, removing: true },
+            error: { ...state.error, partner: null },
+          }));
+
+          try {
+            await doctorService.removeSpecificPartner(partnerType);
+
+            const partnerTypeArabic = partnerType === 'pharmacy' ? 'الصيدلية' : 'المعمل';
+            
+            set((state) => ({
+              loading: { ...state.loading, removing: false },
+              success: { 
+                ...state.success, 
+                partner: `تم إزالة ${partnerTypeArabic} المقترحة بنجاح` 
+              },
+            }));
+
+            // Auto-clear success message
+            setTimeout(() => {
+              set((state) => ({ success: { ...state.success, partner: null } }));
+            }, 3000);
+
+            return { success: true };
+          } catch (error) {
+            // Rollback on error
+            set({
+              suggestedPharmacy: previousPharmacy,
+              suggestedLaboratory: previousLaboratory,
+              loading: { ...get().loading, removing: false },
+              error: { 
+                ...get().error, 
+                partner: error.response?.data?.message || `فشل إزالة ${partnerType === 'pharmacy' ? 'الصيدلية' : 'المعمل'} المقترحة` 
               },
             });
             

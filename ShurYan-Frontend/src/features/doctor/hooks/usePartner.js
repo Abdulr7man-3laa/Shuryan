@@ -23,7 +23,7 @@ export const usePartner = ({ autoFetch = true } = {}) => {
     if (autoFetch) {
       store.fetchAllPartnerData();
     }
-  }, [autoFetch]);
+  }, [autoFetch]); // Remove store from dependencies to prevent infinite re-renders
 
   return {
     // State
@@ -38,6 +38,7 @@ export const usePartner = ({ autoFetch = true } = {}) => {
     // Actions
     suggestPartner: store.suggestPartner,
     removePartner: store.removePartner,
+    removeSpecificPartner: store.removeSpecificPartner,
     clearErrors: store.clearErrors,
     clearSuccess: store.clearSuccess,
     refreshAll: store.fetchAllPartnerData,

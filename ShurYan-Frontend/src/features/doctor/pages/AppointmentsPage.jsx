@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   FaCalendarAlt, FaFilter, FaSearch, FaTimes, FaChevronDown, 
-  FaCheck, FaClock, FaCalendarDay, FaChartLine, FaChevronLeft, FaChevronRight
+  FaCheck, FaClock, FaCalendarDay, FaChartLine, FaChevronLeft, FaChevronRight,
+  FaHourglassHalf, FaPlay, FaUserCheck, FaUserTimes, FaBan
 } from 'react-icons/fa';
 import AppointmentCard from '../components/AppointmentCard';
 import ActiveSessionWarning from '../components/ActiveSessionWarning';
@@ -20,7 +21,8 @@ const AppointmentsPage = () => {
     appointments, 
     loading, 
     error, 
-    pagination, 
+    pagination,
+    statistics, // ✅ Get statistics from API
     goToNextPage, 
     goToPreviousPage, 
     goToPage 
@@ -100,10 +102,28 @@ const AppointmentsPage = () => {
     }
   };
 
-  // Get stats
-  const totalAppointments = pagination?.totalCount || filteredAppointments.length;
-  const completedToday = 0; // TODO: Get from API
-  const upcomingToday = filteredAppointments.length;
+  // Get stats from API statistics (static across all pages)
+  const totalAppointments = statistics?.total || pagination?.totalCount || 0;
+  
+  // ✅ Use statistics from API - These are STATIC and reflect ALL pages
+  const statusCounts = statistics ? {
+    pending: statistics.pending || 0,
+    confirmed: statistics.confirmed || 0,
+    checkedIn: statistics.checkedIn || 0,
+    inProgress: statistics.inProgress || 0,
+    completed: statistics.completed || 0,
+    noShow: statistics.noShow || 0,
+    cancelled: statistics.cancelled || 0,
+  } : {
+    // Fallback: Calculate from current page if statistics not available
+    pending: appointments?.filter(apt => apt.apiStatus === 0 || apt.apiStatus === 'pending').length || 0,
+    confirmed: appointments?.filter(apt => apt.apiStatus === 1 || apt.apiStatus === 'Confirmed').length || 0,
+    checkedIn: appointments?.filter(apt => apt.apiStatus === 2 || apt.apiStatus === 'CheckedIn').length || 0,
+    inProgress: appointments?.filter(apt => apt.apiStatus === 3 || apt.apiStatus === 'InProgress').length || 0,
+    completed: appointments?.filter(apt => apt.apiStatus === 4 || apt.apiStatus === 'Completed').length || 0,
+    noShow: appointments?.filter(apt => apt.apiStatus === 5 || apt.apiStatus === 'NoShow').length || 0,
+    cancelled: appointments?.filter(apt => apt.apiStatus === 6 || apt.apiStatus === 'Cancelled').length || 0,
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/20 to-emerald-50/20" dir="rtl">
@@ -148,22 +168,50 @@ const AppointmentsPage = () => {
                 </div>
               </div>
 
-              {/* Quick Stats */}
-              <div className="flex gap-3">
-                <div className="bg-white/20 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/30">
-                  <div className="flex items-center gap-2 mb-1">
-                    <FaCalendarDay className="text-white/80 text-sm" />
-                    <span className="text-white/80 text-xs font-medium">اليوم</span>
+              {/* Quick Stats - All Status Badges */}
+              <div className="flex flex-wrap gap-3">
+                {/* Total */}
+                <div className="group bg-gradient-to-br from-white/25 to-white/15 backdrop-blur-md px-5 py-3 rounded-xl border-2 border-white/40 hover:border-white/60 flex items-center gap-3 shadow-lg hover:shadow-xl">
+                  <div className="w-10 h-10 bg-white/30 rounded-lg flex items-center justify-center">
+                    <FaCalendarDay className="text-white text-base" />
                   </div>
-                  <div className="text-2xl font-black text-white">{upcomingToday}</div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-white/90 font-semibold tracking-wide">الإجمالي</span>
+                    <span className="text-2xl font-black text-white">{totalAppointments}</span>
+                  </div>
                 </div>
                 
-                <div className="bg-white/20 backdrop-blur-sm px-5 py-3 rounded-xl border-2 border-white/30">
-                  <div className="flex items-center gap-2 mb-1">
-                    <FaCheck className="text-white/80 text-sm" />
-                    <span className="text-white/80 text-xs font-medium">مكتمل</span>
+                {/* Completed - مكتمل */}
+                <div className="group bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 backdrop-blur-md px-5 py-3 rounded-xl border-2 border-emerald-400/50 hover:border-emerald-300/70 flex items-center gap-3 shadow-lg hover:shadow-emerald-500/20">
+                  <div className="w-10 h-10 bg-emerald-400/40 rounded-lg flex items-center justify-center">
+                    <FaCheck className="text-emerald-100 text-base" />
                   </div>
-                  <div className="text-2xl font-black text-white">{completedToday}</div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-emerald-100 font-semibold tracking-wide">مكتمل</span>
+                    <span className="text-2xl font-black text-white">{statusCounts.completed}</span>
+                  </div>
+                </div>
+
+                {/* Confirmed - مؤكد */}
+                <div className="group bg-gradient-to-br from-blue-500/30 to-blue-600/20 backdrop-blur-md px-5 py-3 rounded-xl border-2 border-blue-400/50 hover:border-blue-300/70 flex items-center gap-3 shadow-lg hover:shadow-blue-500/20">
+                  <div className="w-10 h-10 bg-blue-400/40 rounded-lg flex items-center justify-center">
+                    <FaCheck className="text-blue-100 text-base" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-blue-100 font-semibold tracking-wide">مؤكد</span>
+                    <span className="text-2xl font-black text-white">{statusCounts.confirmed}</span>
+                  </div>
+                </div>
+
+                {/* Cancelled - ملغي */}
+                <div className="group bg-gradient-to-br from-red-500/30 to-red-600/20 backdrop-blur-md px-5 py-3 rounded-xl border-2 border-red-400/50 hover:border-red-300/70 flex items-center gap-3 shadow-lg hover:shadow-red-500/20">
+                  <div className="w-10 h-10 bg-red-400/40 rounded-lg flex items-center justify-center">
+                    <FaBan className="text-red-100 text-base" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-red-100 font-semibold tracking-wide">ملغي</span>
+                    <span className="text-2xl font-black text-white">{statusCounts.cancelled}</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FaUsers, FaSearch, FaTimes, FaFilter, FaSort, FaChevronDown, FaCheck } from 'react-icons/fa';
 import { usePatients } from '../hooks/usePatients';
 import PatientCard from '../components/PatientCard';
@@ -52,21 +52,21 @@ const PatientsPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Action handlers
-  const handleMedicalRecordClick = (patient) => {
+  // Action handlers - memoized to prevent re-creating functions
+  const handleMedicalRecordClick = useCallback((patient) => {
     setSelectedPatient(patient);
     setIsMedicalRecordModalOpen(true);
-  };
+  }, []);
 
-  const handlePrescriptionClick = (patient) => {
+  const handlePrescriptionClick = useCallback((patient) => {
     setSelectedPatient(patient);
     setIsPrescriptionModalOpen(true);
-  };
+  }, []);
 
-  const handleLabResultsClick = (patient) => {
+  const handleLabResultsClick = useCallback((patient) => {
     setSelectedPatient(patient);
     setIsLabResultsModalOpen(true);
-  };
+  }, []);
 
   // Get filter/sort labels
   const getFilterLabel = () => {
