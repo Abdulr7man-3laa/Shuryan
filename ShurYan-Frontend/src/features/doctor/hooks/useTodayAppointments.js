@@ -3,21 +3,13 @@ import doctorService from '@/api/services/doctor.service';
 
 /**
  * Custom Hook for Today's Appointments
- * Fetches appointments for today with pagination
- * @returns {Object} { appointments, loading, error, pagination, refreshAppointments }
+ * Fetches all appointments for today (no pagination)
+ * @returns {Object} { appointments, loading, error, refreshAppointments }
  */
 export const useTodayAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({
-    pageNumber: 1,
-    pageSize: 10,
-    totalCount: 0,
-    totalPages: 0,
-    hasPreviousPage: false,
-    hasNextPage: false,
-  });
 
   /**
    * Get today's date in YYYY-MM-DD format
@@ -31,24 +23,9 @@ export const useTodayAppointments = () => {
   };
 
   /**
-   * Check if appointment is today
-   * @param {string} appointmentDate - Date in YYYY-MM-DD format or ISO format
-   */
-  const isToday = (appointmentDate) => {
-    if (!appointmentDate) return false;
-    
-    // Extract date part from ISO string or use as is
-    const dateOnly = appointmentDate.split('T')[0];
-    const today = getTodayDate();
-    
-    console.log('📅 Comparing dates:', { appointmentDate: dateOnly, today });
-    return dateOnly === today;
-  };
-
-  /**
    * Fetch today's appointments from API
    */
-  const fetchAppointments = async (pageNumber = 1, pageSize = 10) => {
+  const fetchAppointments = async (pageNumber = 1, pageSize = 5) => {
     console.log('🚀 fetchAppointments called with:', { pageNumber, pageSize });
     console.log('📅 Today\'s date:', getTodayDate());
     
@@ -73,13 +50,10 @@ export const useTodayAppointments = () => {
         console.log('📋 Count (Before Filter):', appointmentsData?.length);
         console.log('📋 Pagination Data:', paginationData);
         
+        // ✅ Backend handles pagination correctly - just use the data
         if (!appointmentsData || appointmentsData.length === 0) {
-          console.warn('⚠️ API returned EMPTY appointments array!');
+          console.log('ℹ️ No appointments today.');
           setAppointments([]);
-          setPagination({
-            ...paginationData,
-            totalCount: 0,
-          });
           setLoading(false);
           return;
         }
@@ -103,7 +77,6 @@ export const useTodayAppointments = () => {
         }
         
         setAppointments(mappedAppointments);
-        setPagination(paginationData);
       } else {
         console.error('❌ Response validation failed:', {
           isSuccess: response.isSuccess,
@@ -166,14 +139,22 @@ export const useTodayAppointments = () => {
 
   // Fetch appointments on mount
   useEffect(() => {
-    fetchAppointments();
+    fetchAppointments(1, 100); // Get all today's appointments
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Refresh appointments - fetch all today's appointments
+   */
+  const refreshCurrentPage = () => {
+    console.log('🔄 Refreshing today\'s appointments');
+    return fetchAppointments(1, 100); // Get all appointments (up to 100)
+  };
 
   return {
     appointments,
     loading,
     error,
-    pagination,
-    refreshAppointments: fetchAppointments,
+    refreshAppointments: refreshCurrentPage,
   };
 };

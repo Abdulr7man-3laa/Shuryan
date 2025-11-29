@@ -72,7 +72,7 @@ class DoctorService {
   async uploadResearchDocument(file) {
     const formData = new FormData();
     formData.append('documentFile', file);
-    formData.append('type', '7'); // PublishedResearch
+    formData.append('type', '7'); 
 
     const response = await apiClient.post('/Doctors/me/documents/research', formData);
     return response.data;
@@ -81,7 +81,7 @@ class DoctorService {
   async uploadAwardDocument(file) {
     const formData = new FormData();
     formData.append('documentFile', file);
-    formData.append('type', '6'); // AwardsAndRecognitions
+    formData.append('type', '6');
 
     const response = await apiClient.post('/Doctors/me/documents/awards', formData);
     return response.data;
@@ -107,11 +107,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Submit documents for verifier review
-   * Changes document status from 'not_submitted' to 'pending'
-   * @returns {Promise} Submission result
-   */
   async submitDocumentsForReview() {
     const response = await apiClient.post('/Doctors/me/documents/submit-for-review');
     return response.data;
@@ -119,24 +114,11 @@ class DoctorService {
 
   // ==================== Clinic Management ====================
   
-  /**
-   * Get clinic information
-   * @returns {Promise} Clinic info (name, phones, services)
-   */
   async getClinicInfo() {
     const response = await apiClient.get('/Doctors/me/clinic/info');
     return response.data;
   }
 
-  /**
-   * Update clinic information
-   * @param {Object} data - Clinic info data
-   * @param {string} data.clinicName - Clinic name
-   * @param {Array<{number: string, type: number}>} data.phoneNumbers - Phone numbers array
-   *   type: 0 = Mobile1, 1 = Mobile2, 2 = Landline
-   * @param {Array<{id: number, label: string, value: string}>} data.services - Available services
-   * @returns {Promise} Updated clinic info
-   */
   async updateClinicInfo(data) {
     const response = await apiClient.put('/Doctors/me/clinic/info', {
       clinicName: data.clinicName,
@@ -146,10 +128,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get clinic address
-   * @returns {Promise} Clinic address with coordinates
-   */
   async getClinicAddress() {
     const response = await apiClient.get('/Doctors/me/clinic/address');
     console.log('📥 Service: Raw axios response:', response);
@@ -163,17 +141,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Update clinic address
-   * @param {Object} data - Address data
-   * @param {string} data.governorate - Governorate
-   * @param {string} data.city - City
-   * @param {string} data.street - Street
-   * @param {string} data.buildingNumber - Building number
-   * @param {number} data.latitude - Latitude coordinate
-   * @param {number} data.longitude - Longitude coordinate
-   * @returns {Promise} Updated address
-   */
   async updateClinicAddress(data) {
     const response = await apiClient.put('/Doctors/me/clinic/address', {
       governorate: data.governorate,
@@ -186,21 +153,11 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get clinic images
-   * @returns {Promise} Array of clinic images
-   */
   async getClinicImages() {
     const response = await apiClient.get('/Doctors/me/clinic/images');
     return response.data;
   }
 
-  /**
-   * Upload clinic image
-   * @param {File} file - Image file
-   * @param {number} order - Display order (0-5)
-   * @returns {Promise} Uploaded image data
-   */
   async uploadClinicImage(file, order) {
     const formData = new FormData();
     formData.append('image', file);
@@ -214,11 +171,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Delete clinic image
-   * @param {string} imageId - Image ID to delete
-   * @returns {Promise} Deletion confirmation
-   */
   async deleteClinicImage(imageId) {
     const response = await apiClient.delete(`/Doctors/me/clinic/images/${imageId}`);
     return response.data;
@@ -226,22 +178,11 @@ class DoctorService {
 
   // ==================== Services & Pricing ====================
   
-  /**
-   * Get regular checkup service
-   * @returns {Promise} Regular checkup data (price, duration)
-   */
   async getRegularCheckup() {
     const response = await apiClient.get('/Doctors/me/services/regular-checkup');
     return response.data;
   }
 
-  /**
-   * Update regular checkup service
-   * @param {Object} data - Service data
-   * @param {number} data.price - Service price in EGP
-   * @param {number} data.duration - Session duration in minutes
-   * @returns {Promise} Updated service data
-   */
   async updateRegularCheckup(data) {
     const response = await apiClient.put('/Doctors/me/services/regular-checkup', {
       price: data.price,
@@ -250,22 +191,11 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get re-examination service
-   * @returns {Promise} Re-examination data (price, duration)
-   */
   async getReExamination() {
     const response = await apiClient.get('/Doctors/me/services/re-examination');
     return response.data;
   }
 
-  /**
-   * Update re-examination service
-   * @param {Object} data - Service data
-   * @param {number} data.price - Service price in EGP
-   * @param {number} data.duration - Session duration in minutes
-   * @returns {Promise} Updated service data
-   */
   async updateReExamination(data) {
     const response = await apiClient.put('/Doctors/me/services/re-examination', {
       price: data.price,
@@ -276,20 +206,11 @@ class DoctorService {
 
   // ==================== Appointment Settings ====================
   
-  /**
-   * Get weekly schedule
-   * @returns {Promise} Weekly schedule data
-   */
   async getWeeklySchedule() {
     const response = await apiClient.get('/Doctors/me/appointments/schedule');
     return response.data;
   }
 
-  /**
-   * Update weekly schedule
-   * @param {Object} scheduleData - Weekly schedule data
-   * @returns {Promise} Updated schedule
-   */
   async updateWeeklySchedule(scheduleData) {
     const response = await apiClient.put('/Doctors/me/appointments/schedule', {
       weeklySchedule: scheduleData,
@@ -297,58 +218,28 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get exceptional dates
-   * @returns {Promise} Exceptional dates array
-   */
   async getExceptionalDates() {
     const response = await apiClient.get('/Doctors/me/appointments/exceptions');
     return response.data;
   }
 
-  /**
-   * Add exceptional date
-   * @param {Object} exceptionData - Exception data
-   * @param {string} exceptionData.date - Date in YYYY-MM-DD format
-   * @param {string} exceptionData.fromTime - Start time
-   * @param {string} exceptionData.toTime - End time
-   * @param {string} exceptionData.fromPeriod - AM/PM
-   * @param {string} exceptionData.toPeriod - AM/PM
-   * @param {boolean} exceptionData.isClosed - Is closed day
-   * @returns {Promise} Created exception
-   */
   async addExceptionalDate(exceptionData) {
     const response = await apiClient.post('/Doctors/me/appointments/exceptions', exceptionData);
     return response.data;
   }
 
-  /**
-   * Remove exceptional date
-   * @param {string|number} exceptionId - Exception ID
-   * @returns {Promise} Deletion confirmation
-   */
   async removeExceptionalDate(exceptionId) {
     const response = await apiClient.delete(`/Doctors/me/appointments/exceptions/${exceptionId}`);
     return response.data;
   }
 
   // ==================== Partner Suggestion ====================
-  
-  /**
-   * Get current suggested partner
-   * @returns {Promise} Suggested partner data
-   */
+
   async getSuggestedPartner() {
     const response = await apiClient.get('/Doctors/me/partner/suggested');
     return response.data;
   }
 
-  /**
-   * Get available pharmacies with pagination
-   * @param {number} pageNumber - Page number (default: 1)
-   * @param {number} pageSize - Page size (default: 10)
-   * @returns {Promise} Paginated array of available pharmacies
-   */
   async getAvailablePharmacies(pageNumber = 1, pageSize = 10) {
     const response = await apiClient.get('/Doctors/me/partner/pharmacies', {
       params: { pageNumber, pageSize }
@@ -356,12 +247,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get available laboratories with pagination
-   * @param {number} pageNumber - Page number (default: 1)
-   * @param {number} pageSize - Page size (default: 10)
-   * @returns {Promise} Paginated array of available laboratories
-   */
   async getAvailableLaboratories(pageNumber = 1, pageSize = 10) {
     const response = await apiClient.get('/Doctors/me/partner/laboratories', {
       params: { pageNumber, pageSize }
@@ -369,14 +254,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Suggest partners (pharmacy and/or laboratory)
-   * Can suggest one or both independently
-   * @param {Object} partnerData - Partner data
-   * @param {string} [partnerData.pharmacyId] - Pharmacy ID (optional)
-   * @param {string} [partnerData.laboratoryId] - Laboratory ID (optional)
-   * @returns {Promise} Suggested partner data
-   */
   async suggestPartner(partnerData) {
     const payload = {};
     if (partnerData.pharmacyId) payload.pharmacyId = partnerData.pharmacyId;
@@ -386,20 +263,11 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Remove suggested partner
-   * @returns {Promise} Deletion confirmation
-   */
   async removeSuggestedPartner() {
     const response = await apiClient.delete('/Doctors/me/partner/suggested');
     return response.data;
   }
 
-  /**
-   * Remove specific partner type (pharmacy or laboratory)
-   * @param {string} partnerType - 'pharmacy' or 'laboratory'
-   * @returns {Promise} Deletion confirmation
-   */
   async removeSpecificPartner(partnerType) {
     const response = await apiClient.delete(`/Doctors/me/partner/suggested?type=${partnerType}`);
     return response.data;
@@ -407,10 +275,6 @@ class DoctorService {
 
   // ==================== Dashboard APIs ====================
 
-  /**
-   * Get dashboard statistics
-   * @returns {Promise<Object>} Dashboard stats
-   */
   async getDashboardStats() {
     const response = await apiClient.get('/Doctors/me/dashboard/stats');
     return response.data;
@@ -559,6 +423,19 @@ class DoctorService {
     return response.data;
   }
 
+  async createLabPrescription(labPrescriptionData) {
+    try {
+      console.log('📋 Creating lab prescription...', labPrescriptionData);
+      const response = await apiClient.post('/Doctors/me/lab-prescriptions', labPrescriptionData);
+      console.log('✅ Lab prescription created successfully:', response.data);
+      // Extract data from wrapper
+      return response.data?.data || response.data;
+    } catch (error) {
+      console.error('❌ Error creating lab prescription:', error.response?.data || error);
+      throw error;
+    }
+  }
+
   async addSessionDocumentation(appointmentId, documentationData) {
     const response = await apiClient.post(`/Appointments/${appointmentId}/documentation`, documentationData);
     return response.data;
@@ -573,6 +450,40 @@ class DoctorService {
   async submitForReview() {
     const response = await apiClient.post('/Doctors/me/submit-for-review');
     return response.data;
+  }
+
+  // ==================== Reviews Endpoints ====================
+  
+  /**
+   * Get doctor reviews with pagination
+   * GET /api/Doctors/me/reviews
+   * @param {number} pageNumber - Page number (default: 1)
+   * @param {number} pageSize - Page size (default: 10)
+   */
+  async getReviews(pageNumber = 1, pageSize = 10) {
+    const response = await apiClient.get('/Doctors/me/reviews', {
+      params: { pageNumber, pageSize }
+    });
+    return response.data?.data || null;
+  }
+
+  /**
+   * Get review statistics
+   * GET /api/Doctors/me/reviews/statistics
+   */
+  async getReviewStatistics() {
+    const response = await apiClient.get('/Doctors/me/reviews/statistics');
+    return response.data?.data || null;
+  }
+
+  /**
+   * Get review details by ID
+   * GET /api/Doctors/me/reviews/{reviewId}/details
+   * @param {string} reviewId - Review ID
+   */
+  async getReviewDetails(reviewId) {
+    const response = await apiClient.get(`/Doctors/me/reviews/${reviewId}/details`);
+    return response.data?.data || null;
   }
 }
 

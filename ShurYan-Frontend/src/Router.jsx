@@ -1,7 +1,7 @@
 // src/Router.jsx
 import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
-import { MainLayout, AuthLayout, PatientLayout, DoctorLayout, PharmacyLayout } from '@/components/layout';
+import { MainLayout, AuthLayout, PatientLayout, DoctorLayout, PharmacyLayout, LaboratoryLayout } from '@/components/layout';
 import { ProtectedRoute } from '@/features/auth';
 import { AppLoader } from '@/components/common';
 import ScrollToTop from '@/components/common/ScrollToTop';
@@ -11,7 +11,9 @@ import ScrollToTop from '@/components/common/ScrollToTop';
 // ==========================================
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/pages/RegisterPage'));
+const UserTypeSelectionPage = lazy(() => import('@/features/auth/pages/UserTypeSelectionPage'));
 const VerifyEmailPage = lazy(() => import('@/features/auth/pages/VerifyEmailPage'));
+const EmailNotVerifiedPage = lazy(() => import('@/features/auth/pages/EmailNotVerifiedPage'));
 const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage'));
 const VerifyResetOtpPage = lazy(() => import('@/features/auth/pages/VerifyResetOtpPage'));
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage'));
@@ -29,11 +31,21 @@ const SearchDoctorsPage = lazy(() => import('@/features/patient/pages/SearchDoct
 const ProfilePage = lazy(() => import('@/features/patient/pages/ProfilePage'));
 const PatientAppointmentsPage = lazy(() => import('@/features/patient/pages/AppointmentsPage'));
 const PatientPrescriptionsPage = lazy(() => import('@/features/patient/pages/PrescriptionsPage'));
+const LabResultsPage = lazy(() => import('@/features/patient/pages/LabResultsPage'));
+const LabPrescriptionsPage = lazy(() => import('@/features/patient/pages/LabPrescriptionsPage'));
+const PaymentSuccessPage = lazy(() => import('@/features/patient/pages/PaymentSuccessPage'));
+const PaymentFailedPage = lazy(() => import('@/features/patient/pages/PaymentFailedPage'));
 
 // Pharmacy Pages
 const PharmacyDashboard = lazy(() => import('@/features/pharmacy/pages/PharmacyDashboard'));
 const PharmacyOrdersPage = lazy(() => import('@/features/pharmacy/pages/OrdersPage'));
 const PharmacyProfilePage = lazy(() => import('@/features/pharmacy/pages/PharmacyProfilePage'));
+
+// Laboratory Pages
+const LaboratoryDashboard = lazy(() => import('@/features/laboratory/pages/LaboratoryDashboard'));
+const LaboratoryServicesPage = lazy(() => import('@/features/laboratory/pages/ServicesPage'));
+const LaboratoryOrdersPage = lazy(() => import('@/features/laboratory/pages/OrdersPage'));
+const LaboratoryProfilePage = lazy(() => import('@/features/laboratory/pages/LaboratoryProfilePage'));
 
 // Verifier Pages
 const StatisticsPage = lazy(() => import('@/features/verifier/pages/StatisticsPage'));
@@ -178,7 +190,17 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute roles={['patient']}>
             <SuspenseWrapper>
-              <SearchDoctorsPage />
+              <LabResultsPage />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'lab-prescriptions',
+        element: (
+          <ProtectedRoute roles={['patient']}>
+            <SuspenseWrapper>
+              <LabPrescriptionsPage />
             </SuspenseWrapper>
           </ProtectedRoute>
         ),
@@ -189,6 +211,26 @@ const router = createBrowserRouter([
           <ProtectedRoute roles={['patient']}>
             <SuspenseWrapper>
               <ProfilePage />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'payment/success',
+        element: (
+          <ProtectedRoute roles={['patient']}>
+            <SuspenseWrapper>
+              <PaymentSuccessPage />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'payment/failed',
+        element: (
+          <ProtectedRoute roles={['patient']}>
+            <SuspenseWrapper>
+              <PaymentFailedPage />
             </SuspenseWrapper>
           </ProtectedRoute>
         ),
@@ -225,6 +267,52 @@ const router = createBrowserRouter([
           <ProtectedRoute roles={['pharmacy']}>
             <SuspenseWrapper>
               <PharmacyProfilePage />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
+  {
+    path: '/laboratory',
+    element: <LaboratoryLayout />,
+    children: [
+      {
+        path: 'dashboard',
+        element: (
+          <ProtectedRoute roles={['laboratory']}>
+            <SuspenseWrapper>
+              <LaboratoryDashboard />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'services',
+        element: (
+          <ProtectedRoute roles={['laboratory']}>
+            <SuspenseWrapper>
+              <LaboratoryServicesPage />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'orders',
+        element: (
+          <ProtectedRoute roles={['laboratory']}>
+            <SuspenseWrapper>
+              <LaboratoryOrdersPage />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'profile',
+        element: (
+          <ProtectedRoute roles={['laboratory']}>
+            <SuspenseWrapper>
+              <LaboratoryProfilePage />
             </SuspenseWrapper>
           </ProtectedRoute>
         ),
@@ -310,6 +398,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'email-not-verified',
+        element: (
+          <SuspenseWrapper>
+            <EmailNotVerifiedPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
         path: 'forgot-password',
         element: (
           <SuspenseWrapper>
@@ -353,10 +449,26 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: '/select-user-type',
+    element: (
+      <SuspenseWrapper>
+        <UserTypeSelectionPage />
+      </SuspenseWrapper>
+    ),
+  },
+  {
     path: '/verify-email',
     element: (
       <SuspenseWrapper>
         <VerifyEmailPage />
+      </SuspenseWrapper>
+    ),
+  },
+  {
+    path: '/email-not-verified',
+    element: (
+      <SuspenseWrapper>
+        <EmailNotVerifiedPage />
       </SuspenseWrapper>
     ),
   },

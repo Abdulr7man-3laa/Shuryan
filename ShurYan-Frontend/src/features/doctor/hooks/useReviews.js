@@ -29,7 +29,8 @@ const useReviews = ({
       // Don't reset store on unmount to preserve data
       // store.reset();
     };
-  }, [autoFetch, fetchStatistics, store.fetchReviews, store.fetchStatistics]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFetch, fetchStatistics]);
 
   // Computed values
   const hasReviews = store.reviews.length > 0;
@@ -81,11 +82,11 @@ const useReviews = ({
     // Actions
     fetchReviews: store.fetchReviews,
     fetchStatistics: store.fetchStatistics,
-    setFilter: store.setFilter,
+    setMinRatingFilter: store.setMinRatingFilter,
     resetFilters: store.resetFilters,
     goToNextPage: store.goToNextPage,
     goToPreviousPage: store.goToPreviousPage,
-    replyToReview: store.replyToReview,
+    fetchReviewDetails: store.fetchReviewDetails,
     setSelectedReview: store.setSelectedReview,
     clearError: store.clearError,
     reset: store.reset

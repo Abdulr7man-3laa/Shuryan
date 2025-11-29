@@ -58,11 +58,18 @@ const ProtectedRoute = ({ children, roles = [] }) => {
     
     console.log('🎯 Access Check Result:', {
       hasAccess,
+      userRoleType: typeof userRole,
+      userRoleValue: userRole,
+      userRoleLength: userRole?.length,
       comparison: roles.map(role => ({
         required: role,
         requiredLower: role.toLowerCase(),
+        requiredType: typeof role,
         userRole: userRole,
-        match: role.toLowerCase() === userRole
+        userRoleType: typeof userRole,
+        match: role.toLowerCase() === userRole,
+        strictEqual: role.toLowerCase() === userRole,
+        includes: userRole?.includes(role.toLowerCase())
       }))
     });
     

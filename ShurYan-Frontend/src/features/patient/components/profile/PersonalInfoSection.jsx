@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePatientProfile } from '../../hooks/usePatientProfile';
-import { EGYPTIAN_GOVERNORATES, GENDER_OPTIONS, mapGenderToArabic } from '@/utils/constants';
+import { EGYPTIAN_GOVERNORATES, GENDER_OPTIONS } from '@/utils/constants';
 import MapPicker from '@/components/common/MapPicker';
 import '@/styles/leaflet-custom.css';
 import {
@@ -15,6 +15,7 @@ import {
   FaVenusMars,
   FaCalendar,
   FaGlobeAmericas,
+  FaSpinner,
 } from 'react-icons/fa';
 
 /**
@@ -32,15 +33,11 @@ const PersonalInfoSection = () => {
   const {
     personalInfo,
     address,
-    loading,
     error,
     success,
-    fetchPersonalInfo,
-    fetchAddress,
     updatePersonalInfo,
     updateProfileImage,
     updateAddress,
-    clearErrors,
   } = usePatientProfile({ autoFetch: false }); // Fetched by parent
 
   const [profileImagePreview, setProfileImagePreview] = useState(null);
@@ -48,6 +45,7 @@ const PersonalInfoSection = () => {
   const [autoSaveStatus, setAutoSaveStatus] = useState(''); // '', 'saved', 'error'
   const hasInitializedInfoRef = useRef(false);
   const hasInitializedAddressRef = useRef(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
   const hasChangesRef = useRef(false);
   const lastSavedInfoRef = useRef(null);
   const lastSavedAddressRef = useRef(null);
@@ -163,37 +161,193 @@ const PersonalInfoSection = () => {
     setAutoSaveStatus(''); // Clear status when editing
   };
 
-  // Handle map location change
-  const handleMapLocationChange = (lat, lng) => {
-    console.log('🗺️ PersonalInfoSection: Map location changed:', { lat, lng });
+  // Handle map location change (from MapPicker)
+  const handleMapLocationChange = (lat, lng, addressDetails) => {
+    console.log('🗺️ PersonalInfoSection: Received from MapPicker:', { lat, lng, addressDetails });
     
+    // Map governorate name to enum value (1-27) - matches backend exactly
+    const governorateMap = {
+      'القاهرة': 1, 'Cairo': 1,
+      'الجيزة': 2, 'Giza': 2,
+      'الإسكندرية': 3, 'Alexandria': 3,
+      'الدقهلية': 4, 'Dakahlia': 4,
+      'البحر الأحمر': 5, 'Red Sea': 5, 'RedSea': 5,
+      'البحيرة': 6, 'Beheira': 6,
+      'الفيوم': 7, 'Fayoum': 7,
+      'الغربية': 8, 'Gharbia': 8,
+      'الإسماعيلية': 9, 'Ismailia': 9,
+      'المنوفية': 10, 'Menofia': 10, 'Monufia': 10,
+      'المنيا': 11, 'Minya': 11,
+      'القليوبية': 12, 'Qaliubiya': 12, 'Qalyubia': 12,
+      'الوادي الجديد': 13, 'New Valley': 13, 'NewValley': 13,
+      'شمال سيناء': 14, 'North Sinai': 14, 'NorthSinai': 14,
+      'بورسعيد': 15, 'Port Said': 15, 'PortSaid': 15,
+      'قنا': 16, 'Qena': 16,
+      'الشرقية': 17, 'Sharqia': 17,
+      'سوهاج': 18, 'Sohag': 18,
+      'جنوب سيناء': 19, 'South Sinai': 19, 'SouthSinai': 19,
+      'السويس': 20, 'Suez': 20,
+      'أسوان': 21, 'Aswan': 21,
+      'أسيوط': 22, 'Assiut': 22,
+      'بني سويف': 23, 'Beni Suef': 23, 'BeniSuef': 23,
+      'دمياط': 24, 'Damietta': 24,
+      'كفر الشيخ': 25, 'Kafr El Sheikh': 25, 'KafrElSheikh': 25,
+      'الأقصر': 26, 'Luxor': 26,
+      'مرسى مطروح': 27, 'Matrouh': 27, 'مطروح': 27,
+    };
+
+    const governorateValue = addressDetails?.governorate 
+      ? (governorateMap[addressDetails.governorate] || 1)
+      : addressValues.governorate || 1;
+
     setAddressValues(prev => ({
       ...prev,
       latitude: String(lat),
       longitude: String(lng),
+      // Update address fields if addressDetails provided
+      ...(addressDetails && {
+        governorate: String(governorateValue), // Convert to string for select input
+        city: addressDetails.city || prev.city,
+        street: addressDetails.street || prev.street,
+      }),
     }));
+    
     hasChangesRef.current = true;
-    setAutoSaveStatus(''); // Clear status when editing
+    setAutoSaveStatus('');
+    
+    console.log('✅ PersonalInfoSection: Address updated:', {
+      governorate: governorateValue,
+      city: addressDetails?.city,
+      street: addressDetails?.street,
+    });
+  };
+
+  // Reverse geocoding to get address from coordinates
+  const getAddressFromCoordinates = async (lat, lng) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar`
+      );
+      const data = await response.json();
+
+      if (data.address) {
+        // Extract governorate (state/province)
+        const governorateName = data.address.state || data.address.province || data.address.city || '';
+        
+        // Map governorate name to enum value (1-27) - matches backend exactly
+        const governorateMap = {
+          'القاهرة': 1, 'Cairo': 1,
+          'الجيزة': 2, 'Giza': 2,
+          'الإسكندرية': 3, 'Alexandria': 3,
+          'الدقهلية': 4, 'Dakahlia': 4,
+          'البحر الأحمر': 5, 'Red Sea': 5, 'RedSea': 5,
+          'البحيرة': 6, 'Beheira': 6,
+          'الفيوم': 7, 'Fayoum': 7,
+          'الغربية': 8, 'Gharbia': 8,
+          'الإسماعيلية': 9, 'Ismailia': 9,
+          'المنوفية': 10, 'Menofia': 10, 'Monufia': 10,
+          'المنيا': 11, 'Minya': 11,
+          'القليوبية': 12, 'Qaliubiya': 12, 'Qalyubia': 12,
+          'الوادي الجديد': 13, 'New Valley': 13, 'NewValley': 13,
+          'شمال سيناء': 14, 'North Sinai': 14, 'NorthSinai': 14,
+          'بورسعيد': 15, 'Port Said': 15, 'PortSaid': 15,
+          'قنا': 16, 'Qena': 16,
+          'الشرقية': 17, 'Sharqia': 17,
+          'سوهاج': 18, 'Sohag': 18,
+          'جنوب سيناء': 19, 'South Sinai': 19, 'SouthSinai': 19,
+          'السويس': 20, 'Suez': 20,
+          'أسوان': 21, 'Aswan': 21,
+          'أسيوط': 22, 'Assiut': 22,
+          'بني سويف': 23, 'Beni Suef': 23, 'BeniSuef': 23,
+          'دمياط': 24, 'Damietta': 24,
+          'كفر الشيخ': 25, 'Kafr El Sheikh': 25, 'KafrElSheikh': 25,
+          'الأقصر': 26, 'Luxor': 26,
+          'مرسى مطروح': 27, 'Matrouh': 27, 'مطروح': 27,
+        };
+
+        const governorateValue = governorateMap[governorateName] || 1;
+        const city = data.address.city || data.address.town || data.address.village || '';
+        const street = data.address.road || data.address.street || '';
+
+        return {
+          governorate: governorateValue,
+          city,
+          street,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching address from coordinates:', error);
+      return null;
+    }
+  };
+
+  // Get current location with auto-fill
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('المتصفح لا يدعم تحديد الموقع الجغرافي');
+      return;
+    }
+
+    setGettingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        console.log('📍 Current location:', { lat, lng });
+
+        // Get address from coordinates
+        const addressData = await getAddressFromCoordinates(lat, lng);
+        console.log('🗺️ Address data from reverse geocoding:', addressData);
+
+        setAddressValues((prev) => ({
+          ...prev,
+          latitude: String(lat),
+          longitude: String(lng),
+          ...(addressData && {
+            governorate: String(addressData.governorate),
+            city: addressData.city,
+            street: addressData.street,
+          }),
+        }));
+
+        hasChangesRef.current = true;
+        setAutoSaveStatus('');
+        setGettingLocation(false);
+      },
+      (error) => {
+        console.error('❌ Error getting location:', error);
+        alert('فشل الحصول على الموقع الحالي. تأكد من السماح بالوصول للموقع.');
+        setGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
   };
 
   // Auto-save function
   const performAutoSave = async () => {
     try {
-    // Check if there are changes
-    const currentInfo = JSON.stringify(infoValues);
-    const currentAddress = JSON.stringify(addressValues);
-    
-    const hasInfoChanges = currentInfo !== lastSavedInfoRef.current;
-    const hasAddressChanges = currentAddress !== lastSavedAddressRef.current;
-    const hasImageChanges = !!profileImageFile;
-    
-    console.log('📊 Change detection:', {
-      hasInfoChanges,
-      hasAddressChanges,
-      hasImageChanges,
-      currentInfo: currentInfo.substring(0, 100) + '...',
-      lastSavedInfo: lastSavedInfoRef.current?.substring(0, 100) + '...',
-    });
+      // Check if there are changes
+      const currentInfo = JSON.stringify(infoValues);
+      const currentAddress = JSON.stringify(addressValues);
+      
+      const hasInfoChanges = currentInfo !== lastSavedInfoRef.current;
+      const hasAddressChanges = currentAddress !== lastSavedAddressRef.current;
+      const hasImageChanges = !!profileImageFile;
+      
+      console.log('📊 Change detection:', {
+        hasInfoChanges,
+        hasAddressChanges,
+        hasImageChanges,
+        currentInfo: currentInfo.substring(0, 100) + '...',
+        lastSavedInfo: lastSavedInfoRef.current?.substring(0, 100) + '...',
+      });
     
     if (!hasInfoChanges && !hasAddressChanges && !hasImageChanges) {
       console.log('⏭️ No changes to save, skipping...');
@@ -610,25 +764,31 @@ const PersonalInfoSection = () => {
             <h4 className="text-lg font-semibold text-slate-800">العنوان</h4>
           </div>
 
+          {/* Info Note */}
+          <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl mb-6">
+            <p className="text-sm text-teal-700 flex items-center gap-2">
+              <FaMapMarkerAlt className="text-teal-500" />
+              اضغط على زر "تحديد موقعي الحالي" لتحديد موقعك وملء بيانات العنوان تلقائياً
+            </p>
+          </div>
+
           {/* Governorate & City */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 المحافظة <span className="text-red-500">*</span>
               </label>
-              <select
-                name="governorate"
-                value={addressValues.governorate}
-                onChange={handleAddressChange}
-                className="w-full px-4 py-3 border border-slate-200 rounded-lg transition-all duration-200 hover:border-teal-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 text-right"
-              >
-                <option value="">اختر المحافظة</option>
-                {EGYPTIAN_GOVERNORATES.map(gov => (
-                  <option key={gov.id} value={gov.id}>
-                    {gov.label}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={
+                  addressValues.governorate
+                    ? EGYPTIAN_GOVERNORATES.find(g => g.id === parseInt(addressValues.governorate))?.label || 'سيتم ملؤها تلقائياً'
+                    : 'سيتم ملؤها تلقائياً'
+                }
+                disabled
+                placeholder="سيتم ملؤها تلقائياً"
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed text-right"
+              />
             </div>
 
             <div>
@@ -640,8 +800,9 @@ const PersonalInfoSection = () => {
                 name="city"
                 value={addressValues.city}
                 onChange={handleAddressChange}
-                placeholder="أدخل اسم المدينة"
-                className="w-full px-4 py-3 border border-slate-200 rounded-lg transition-all duration-200 hover:border-teal-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 text-right"
+                disabled
+                placeholder="سيتم ملؤها تلقائياً"
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed text-right"
               />
             </div>
           </div>
@@ -657,8 +818,9 @@ const PersonalInfoSection = () => {
                 name="street"
                 value={addressValues.street}
                 onChange={handleAddressChange}
-                placeholder="أدخل اسم الشارع"
-                className="w-full px-4 py-3 border border-slate-200 rounded-lg transition-all duration-200 hover:border-teal-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 text-right"
+                disabled
+                placeholder="سيتم ملؤها تلقائياً"
+                className="w-full px-4 py-3 border border-slate-200 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed text-right"
               />
             </div>
 
@@ -712,34 +874,21 @@ const PersonalInfoSection = () => {
             <div className="flex items-end">
               <button
                 type="button"
-                onClick={() => {
-                  if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                      (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        setAddressValues(prev => ({
-                          ...prev,
-                          latitude: String(lat),
-                          longitude: String(lng),
-                        }));
-                        hasChangesRef.current = true;
-                        setAutoSaveStatus('');
-                        console.log('📍 Current location:', { lat, lng });
-                      },
-                      (error) => {
-                        console.error('❌ Error getting location:', error);
-                        alert('لا يمكن الوصول إلى موقعك. يرجى التأكد من السماح بالوصول للموقع.');
-                      }
-                    );
-                  } else {
-                    alert('المتصفح لا يدعم تحديد الموقع الجغرافي');
-                  }
-                }}
-                className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg hover:from-teal-700 hover:to-teal-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-sm"
+                onClick={handleGetCurrentLocation}
+                disabled={gettingLocation}
+                className="w-full px-4 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-lg hover:from-teal-700 hover:to-teal-800 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FaMapMarkerAlt className="w-4 h-4" />
-                تحديد موقعي الحالي
+                {gettingLocation ? (
+                  <>
+                    <FaSpinner className="w-4 h-4 animate-spin" />
+                    جاري التحديد...
+                  </>
+                ) : (
+                  <>
+                    <FaMapMarkerAlt className="w-4 h-4" />
+                    تحديد موقعي الحالي
+                  </>
+                )}
               </button>
             </div>
           </div>

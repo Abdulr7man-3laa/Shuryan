@@ -117,7 +117,7 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
   const welcomeMessage = {
     messageId: 'welcome',
     role: 'assistant',
-    content: 'مرحباً! أنا **مساعدك الذكي** في شُريان.\n\nكيف يمكنني مساعدتك اليوم؟',
+    content: 'مرحباً! أنا **شُريان**، مساعدك الطبي الافتراضي. يرجي ملاحظة أنني لا اغني عن استشارة الطبيب.\n\nكيف يمكنني مساعدتك اليوم؟',
     timestamp: new Date().toISOString(),
     suggestions: [],
     actions: [],
@@ -132,14 +132,10 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-              <FaRobot className="text-white text-xl" />
+              <FaRobot className="text-white text-xxl" />
             </div>
             <div>
-              <h3 className="text-white font-black text-base">مساعد شُريان</h3>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse"></div>
-                <span className="text-white/90 text-xs font-medium">متصل الآن</span>
-              </div>
+              <h3 className="text-white text-xl font-black text-base">شُريان - مساعدك الطبي</h3>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -331,27 +327,23 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
       {/* Quick Actions - تظهر فقط في البداية */}
       {!hasMessages && !isLoading && (
         <div className="px-3 py-2 border-t border-slate-200 bg-white flex-shrink-0">
-          <p className="text-xs font-semibold text-slate-600 mb-1.5">أسئلة شائعة:</p>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleQuickAction('كيف أحجز موعد؟')}
               className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
             >
-              <span>📅</span>
               <span>كيف أحجز موعد؟</span>
             </button>
             <button
               onClick={() => handleQuickAction('أين أجد روشتاتي؟')}
               className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
             >
-              <span>💊</span>
               <span>أين أجد روشتاتي؟</span>
             </button>
             <button
               onClick={() => handleQuickAction('كيف أبحث عن طبيب؟')}
               className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
             >
-              <span>🔍</span>
               <span>كيف أبحث عن طبيب؟</span>
             </button>
           </div>

@@ -24,10 +24,19 @@ class AuthService {
     return response.data;
   }
 
+  /**
+   * Register Laboratory
+   * POST /Auth/register/laboratory
+   * @param {Object} data - Laboratory registration data
+   * @param {string} data.name - Laboratory name
+   * @param {string} data.email - Email address
+   * @param {string} data.password - Password
+   * @param {string} data.confirmPassword - Confirm password
+   * @returns {Promise<Object>} Response with isSuccess, message, data, statusCode
+   */
   async registerLaboratory(data) {
     const response = await apiClient.post('/Auth/register/laboratory', {
-      firstName: data.firstName,
-      lastName: data.lastName,
+      name: data.name,
       email: data.email,
       password: data.password,
       confirmPassword: data.confirmPassword,
@@ -37,8 +46,7 @@ class AuthService {
 
   async registerPharmacy(data) {
     const response = await apiClient.post('/Auth/register/pharmacy', {
-      firstName: data.firstName,
-      lastName: data.lastName,
+      name: data.name,
       email: data.email,
       password: data.password,
       confirmPassword: data.confirmPassword,
@@ -69,10 +77,16 @@ class AuthService {
     return response.data;
   }
 
-  async googleLogin(idToken, userRole) {
-    const response = await apiClient.post('/Auth/google-login', {
+  /**
+   * Google OAuth Authentication
+   * @param {string} idToken - Google ID token
+   * @param {string|null} userType - "patient" | "doctor" | "pharmacy" | "laboratory" | null
+   * @returns {Promise} Response with isSuccess, message, data (user + tokens), statusCode
+   */
+  async googleLogin(idToken, userType = null) {
+    const response = await apiClient.post('/Auth/google', {
       idToken,
-      userRole,
+      userType,
     });
     return response.data;
   }
@@ -90,13 +104,6 @@ class AuthService {
       otpCode: String(otpCode).trim(),
       newPassword,
       confirmPassword,
-    });
-    return response.data;
-  }
-
-  async resendVerification(email) {
-    const response = await apiClient.post('/Auth/resend-verification', {
-      email,
     });
     return response.data;
   }

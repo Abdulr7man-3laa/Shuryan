@@ -255,59 +255,6 @@ const BookingModal = ({ doctorInfo }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {/* Regular Checkup */}
                   <button
-                    onClick={() => selectConsultationType(0)}
-                    className={`group relative p-6 rounded-2xl border-3 transition-all duration-300 ${
-                      selectedConsultationType === 0
-                        ? 'border-[#00d5be] bg-gradient-to-br from-[#00d5be]/10 to-[#00bda8]/10 shadow-xl scale-105'
-                        : 'border-slate-200 bg-white hover:border-[#00d5be]/50 hover:shadow-lg'
-                    }`}
-                  >
-                    {selectedConsultationType === 0 && (
-                      <div className="absolute top-4 left-4">
-                        <FaCheckCircle className="text-2xl text-[#00d5be] drop-shadow-lg" />
-                      </div>
-                    )}
-                    
-                    <div className="flex items-start gap-4">
-                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                        selectedConsultationType === 0
-                          ? 'bg-gradient-to-br from-[#00d5be] to-[#00bda8] text-white shadow-xl'
-                          : 'bg-slate-100 text-slate-600 group-hover:bg-[#00d5be]/20 group-hover:text-[#00d5be]'
-                      }`}>
-                        <FaStethoscope className="text-2xl" />
-                      </div>
-                      
-                      <div className="flex-1 text-right">
-                        <h4 className="text-xl font-black text-slate-800 mb-2">كشف جديد</h4>
-                        <p className="text-sm text-slate-600 mb-3">
-                          كشف شامل وتقييم حالة جديدة
-                        </p>
-                        
-                        {services?.regularCheckup && (
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-2 text-slate-600">
-                              <FaClock className="text-sm" />
-                              <span className="text-sm font-semibold">
-                                {services.regularCheckup.duration} دقيقة
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <FaMoneyBillWave className={`text-lg ${
-                                selectedConsultationType === 0 ? 'text-[#00d5be]' : 'text-emerald-600'
-                              }`} />
-                              <span className="text-2xl font-black text-slate-800">
-                                {services.regularCheckup.price}
-                              </span>
-                              <span className="text-sm font-bold text-slate-600">جنيه</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                  
-                  {/* Re-examination */}
-                  <button
                     onClick={() => selectConsultationType(1)}
                     className={`group relative p-6 rounded-2xl border-3 transition-all duration-300 ${
                       selectedConsultationType === 1
@@ -331,6 +278,59 @@ const BookingModal = ({ doctorInfo }) => {
                       </div>
                       
                       <div className="flex-1 text-right">
+                        <h4 className="text-xl font-black text-slate-800 mb-2">كشف جديد</h4>
+                        <p className="text-sm text-slate-600 mb-3">
+                          كشف شامل وتقييم حالة جديدة
+                        </p>
+                        
+                        {services?.regularCheckup && (
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-2 text-slate-600">
+                              <FaClock className="text-sm" />
+                              <span className="text-sm font-semibold">
+                                {services.regularCheckup.duration} دقيقة
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <FaMoneyBillWave className={`text-lg ${
+                                selectedConsultationType === 1 ? 'text-[#00d5be]' : 'text-emerald-600'
+                              }`} />
+                              <span className="text-2xl font-black text-slate-800">
+                                {services.regularCheckup.price}
+                              </span>
+                              <span className="text-sm font-bold text-slate-600">جنيه</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Re-examination */}
+                  <button
+                    onClick={() => selectConsultationType(2)}
+                    className={`group relative p-6 rounded-2xl border-3 transition-all duration-300 ${
+                      selectedConsultationType === 2
+                        ? 'border-[#00d5be] bg-gradient-to-br from-[#00d5be]/10 to-[#00bda8]/10 shadow-xl scale-105'
+                        : 'border-slate-200 bg-white hover:border-[#00d5be]/50 hover:shadow-lg'
+                    }`}
+                  >
+                    {selectedConsultationType === 2 && (
+                      <div className="absolute top-4 left-4">
+                        <FaCheckCircle className="text-2xl text-[#00d5be] drop-shadow-lg" />
+                      </div>
+                    )}
+                    
+                    <div className="flex items-start gap-4">
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                        selectedConsultationType === 2
+                          ? 'bg-gradient-to-br from-[#00d5be] to-[#00bda8] text-white shadow-xl'
+                          : 'bg-slate-100 text-slate-600 group-hover:bg-[#00d5be]/20 group-hover:text-[#00d5be]'
+                      }`}>
+                        <FaStethoscope className="text-2xl" />
+                      </div>
+                      
+                      <div className="flex-1 text-right">
                         <h4 className="text-xl font-black text-slate-800 mb-2">إعادة كشف</h4>
                         <p className="text-sm text-slate-600 mb-3">
                           متابعة حالة سابقة أو تقييم نتائج
@@ -346,7 +346,7 @@ const BookingModal = ({ doctorInfo }) => {
                             </div>
                             <div className="flex items-center gap-2">
                               <FaMoneyBillWave className={`text-lg ${
-                                selectedConsultationType === 1 ? 'text-[#00d5be]' : 'text-emerald-600'
+                                selectedConsultationType === 2 ? 'text-[#00d5be]' : 'text-emerald-600'
                               }`} />
                               <span className="text-2xl font-black text-slate-800">
                                 {services.reExamination.price}

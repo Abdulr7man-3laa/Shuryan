@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import DoctorDashboardBody from '../components/DoctorDashboardBody';
 import TodayAppointments from '../components/TodayAppointments';
 import DashboardFooter from '../components/DashboardFooter';
@@ -9,6 +8,8 @@ import { useTodayAppointments } from '../hooks/useTodayAppointments';
 import { useSessionManager } from '../hooks/useSessionManager';
 import { isAppointmentCompleted } from '@/utils/appointmentStatus';
 import sessionService from '@/api/services/session.service';
+import signalRService from '@/services/signalr.service';
+import useAuth from '@/features/auth/hooks/useAuth';
 
 /**
  * Doctor Dashboard Page
@@ -16,25 +17,190 @@ import sessionService from '@/api/services/session.service';
  * @component
  */
 const DoctorDashboard = () => {
-  const navigate = useNavigate();
+  const { accessToken } = useAuth();
   const { stats, loading, error, refreshStats } = useDashboardStats();
   const { 
     appointments, 
     loading: appointmentsLoading, 
-    error: appointmentsError,
-    refreshAppointments 
+    error: appointmentsError, 
+    refreshAppointments
   } = useTodayAppointments();
   const { startOrResumeSession, sessionLoading, sessionError, clearSessionError } = useSessionManager();
-  
+
   // Filter state
   const [filterType, setFilterType] = useState('all');
-  
+
   // Active session from API
   const [activeSessionFromAPI, setActiveSessionFromAPI] = useState(null);
-  
+
   // Session Modal state
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+
+  /**
+   * Format time from 24-hour to 12-hour with AM/PM in Arabic
+   * @param {string} time24 - Time in 24-hour format (HH:mm or HH:mm:ss)
+   * @returns {string} Time in 12-hour format with Arabic AM/PM
+   */
+  const formatTime = (time24) => {
+    if (!time24) return '--:--';
+    const parts = time24.split(':');
+    const hours = parseInt(parts[0]);
+    const minutes = parts[1];
+    const period = hours >= 12 ? 'م' : 'ص';
+    const hour12 = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+    return `${hour12.toString().padStart(2, '0')}:${minutes} ${period}`;
+  };
+
+  // SignalR: Connect and setup listener for new appointments
+  useEffect(() => {
+    if (!accessToken) {
+      console.warn('[DoctorDashboard] No access token, skipping SignalR connection');
+      return;
+    }
+
+    let isSubscribed = true;
+
+    const initializeSignalR = async () => {
+      try {
+        console.log('[DoctorDashboard] 🔌 Initializing SignalR connection...');
+        console.log('[DoctorDashboard] Connection state before:', signalRService.getConnectionState());
+
+        // Connect to SignalR if not already connected
+        if (!signalRService.isConnected) {
+          await signalRService.connect(accessToken);
+          console.log('[DoctorDashboard] ✅ SignalR connected successfully');
+        } else {
+          console.log('[DoctorDashboard] ℹ️ SignalR already connected');
+        }
+
+        console.log('[DoctorDashboard] Connection state after:', signalRService.getConnectionState());
+        console.log('[DoctorDashboard] 📡 Registering listener for NewAppointmentToday');
+
+        // Setup listener for new appointments
+        const handleNewAppointment = (appointmentData) => {
+          if (!isSubscribed) {
+            console.log('[DoctorDashboard] ⚠️ Component unmounted, ignoring event');
+            return;
+          }
+
+          console.log('═══════════════════════════════════════');
+          console.log('📡 [SignalR] NewAppointmentToday EVENT RECEIVED!');
+          console.log('📡 [SignalR] Raw data:', JSON.stringify(appointmentData, null, 2));
+          console.log('═══════════════════════════════════════');
+          
+          try {
+            // Map the appointment data to frontend format
+            const formattedTime = formatTime(appointmentData.appointmentTime);
+            
+            const newAppointment = {
+              id: appointmentData.id,
+              patientId: appointmentData.patientId,
+              patientName: appointmentData.patientName,
+              patientInitial: appointmentData.patientName?.charAt(0) || '؟',
+              phoneNumber: appointmentData.patientPhoneNumber,
+              time: formattedTime,
+              appointmentDate: appointmentData.appointmentDate,
+              duration: appointmentData.duration,
+              status: appointmentData.appointmentType === 'regular' ? 'كشف عام' : 'متابعة',
+              appointmentType: appointmentData.appointmentType,
+              apiStatus: appointmentData.status || 'Confirmed',
+              notes: appointmentData.notes,
+              price: appointmentData.price,
+            };
+
+            console.log('✅ [SignalR] Formatted appointment:', newAppointment);
+            console.log('🔄 [SignalR] Calling refreshAppointments()...');
+
+            // Refresh appointments to get the new one
+            refreshAppointments();
+            
+            console.log('🔄 [SignalR] Calling refreshStats()...');
+            // Refresh stats to update counters
+            refreshStats();
+
+            // Show notification to doctor
+            const notificationMessage = `موعد جديد: ${appointmentData.patientName} - ${formattedTime}`;
+            
+            console.log('🔔 [SignalR] Showing notification:', notificationMessage);
+
+            // Browser notification if supported and permitted
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('موعد جديد اليوم', {
+                body: notificationMessage,
+                icon: '/logo.png',
+                badge: '/logo.png',
+              });
+            }
+            
+            
+            console.log('✅ [SignalR] Dashboard updated with new appointment');
+            console.log('═══════════════════════════════════════');
+          } catch (error) {
+            console.error('❌ [SignalR] Error handling new appointment:', error);
+            console.error('❌ [SignalR] Error stack:', error.stack);
+          }
+        };
+
+        // Register the primary listener
+        signalRService.on('NewAppointmentToday', handleNewAppointment);
+        console.log('[DoctorDashboard] ✅ Listener registered for: NewAppointmentToday');
+
+        // ⚠️ DEBUGGING: Try alternative event names (case variations)
+        signalRService.on('newAppointmentToday', (data) => {
+          console.log('⚠️ [DEBUG] Received event: newAppointmentToday (lowercase)', data);
+          handleNewAppointment(data);
+        });
+
+        signalRService.on('ReceiveNotification', (notification) => {
+          console.log('⚠️ [DEBUG] Received event: ReceiveNotification');
+          console.log('⚠️ [DEBUG] Full notification object:', JSON.stringify(notification, null, 2));
+          console.log('⚠️ [DEBUG] notification.title:', notification.title);
+          console.log('⚠️ [DEBUG] notification.data:', notification.data);
+          
+          // Check if it's a new appointment notification
+          if (notification.title === 'NewAppointmentToday') {
+            console.log('📌 This is a NewAppointmentToday notification, processing...');
+            
+            // الـ appointment data موجود في notification.data
+            const appointmentData = notification.data;
+            
+            if (appointmentData) {
+              handleNewAppointment(appointmentData);
+            } else {
+              console.error('❌ [DEBUG] notification.data is empty or null!');
+            }
+          } else {
+            console.log('ℹ️ [DEBUG] Different notification type:', notification.title);
+          }
+        });
+
+        // Generic catch-all for debugging
+        signalRService.on('receiveNotification', (data) => {
+          console.log('⚠️ [DEBUG] Received event: receiveNotification (lowercase)', data);
+        });
+
+        console.log('[DoctorDashboard] ✅ All listeners registered successfully');
+
+      } catch (error) {
+        console.error('[DoctorDashboard] ❌ SignalR initialization failed:', error);
+        console.error('[DoctorDashboard] ❌ Error details:', error.message);
+        console.error('[DoctorDashboard] ❌ Error stack:', error.stack);
+      }
+    };
+
+    initializeSignalR();
+
+    // Cleanup
+    return () => {
+      console.log('[DoctorDashboard] 🧹 Cleaning up SignalR listeners');
+      isSubscribed = false;
+      signalRService.off('NewAppointmentToday');
+      signalRService.off('newAppointmentToday');
+      signalRService.off('ReceiveNotification');
+      signalRService.off('receiveNotification');
+    };
+  }, [accessToken, refreshAppointments, refreshStats]);
 
   // Check for active session on mount and after refresh
   useEffect(() => {
@@ -51,9 +217,10 @@ const DoctorDashboard = () => {
         console.error('❌ Error checking active session:', error);
       }
     };
-    
+
     checkActiveSession();
   }, [appointments]); // Re-check when appointments change
+
 
   /**
    * Handle stat card click
@@ -61,8 +228,6 @@ const DoctorDashboard = () => {
    */
   const handleStatClick = (stat) => {
     console.log('Stat clicked:', stat);
-    // TODO: Add navigation or modal logic
-    // Example: navigate(`/doctor/${stat.id}`);
   };
 
   /**
@@ -73,18 +238,18 @@ const DoctorDashboard = () => {
     console.log('🔵 Appointment ID:', appointment.id);
     console.log('🔵 Appointment apiStatus:', appointment.apiStatus);
     console.log('🔵 Appointment apiStatus type:', typeof appointment.apiStatus);
-    
+
     // Check if session is completed (using helper function)
     const isCompleted = isAppointmentCompleted(appointment.apiStatus);
-    
+
     console.log('🔵 isCompleted:', isCompleted);
-    
+
     // For both completed and active sessions, open modal
     console.log('🔵 Calling startOrResumeSession...');
-    
+
     // Start or resume session
     const result = await startOrResumeSession(appointment);
-    
+
     if (result.success) {
       // Update active session immediately
       setActiveSessionFromAPI({
@@ -92,16 +257,16 @@ const DoctorDashboard = () => {
         patientName: appointment.patientName,
         status: 'InProgress'
       });
-      
+
       // Open session modal immediately
       setSelectedAppointment(appointment);
       setIsSessionModalOpen(true);
-      
+
       console.log('✅ Session started, UI updated immediately');
     } else {
       // Show error with better formatting
       const errorMsg = result.error || 'حدث خطأ غير متوقع';
-      
+
       // If there's an active session, offer to go to it
       if (errorMsg.includes('جلسة نشطة') && activeSessionFromAPI) {
         const goToActive = window.confirm(
@@ -109,7 +274,7 @@ const DoctorDashboard = () => {
           `الجلسة النشطة مع: ${activeSessionFromAPI.patientName}\n\n` +
           `هل تريد الذهاب إلى الجلسة النشطة؟`
         );
-        
+
         if (goToActive) {
           // Find the active appointment
           const activeApt = appointments.find(apt => apt.id === activeSessionFromAPI.appointmentId);
@@ -130,7 +295,7 @@ const DoctorDashboard = () => {
   const handleCloseSessionModal = async () => {
     setIsSessionModalOpen(false);
     setSelectedAppointment(null);
-    
+
     // Check if session is still active
     try {
       const result = await sessionService.getDoctorActiveSession();
@@ -144,7 +309,7 @@ const DoctorDashboard = () => {
     } catch (error) {
       console.error('❌ Error checking session status:', error);
     }
-    
+
     // Refresh appointments
     refreshAppointments();
   };
@@ -156,7 +321,7 @@ const DoctorDashboard = () => {
   const { displayedAppointments, activeSession } = useMemo(() => {
     console.log('🔄 useMemo: Processing appointments', appointments.length);
     console.log('🔄 Active session from API:', activeSessionFromAPI?.appointmentId);
-    
+
     // Update appointments with active session status
     const updatedAppointments = appointments.map(apt => {
       // If this appointment has an active session, update its status
@@ -169,32 +334,32 @@ const DoctorDashboard = () => {
       }
       return apt;
     });
-    
+
     // Display appointments that are: Pending, Confirmed, or InProgress
     const displayed = updatedAppointments.filter(apt => {
-      const isDisplayed = apt.apiStatus === 'pending' || 
-                         apt.apiStatus === 'Confirmed' || 
-                         apt.apiStatus === 1 ||
-                         apt.apiStatus === 'InProgress' || 
-                         apt.apiStatus === 3;
-      
+      const isDisplayed = apt.apiStatus === 'pending' ||
+        apt.apiStatus === 'Confirmed' ||
+        apt.apiStatus === 1 ||
+        apt.apiStatus === 'InProgress' ||
+        apt.apiStatus === 3;
+
       console.log(`📋 Appointment ${apt.id}:`, {
         patientName: apt.patientName,
         apiStatus: apt.apiStatus,
         isDisplayed
       });
-      
+
       return isDisplayed;
     });
-    
+
     const active = updatedAppointments.find(apt => {
       // InProgress (active session)
       return apt.apiStatus === 'InProgress' || apt.apiStatus === 3;
     });
-    
+
     console.log('✅ Displayed appointments:', displayed.length);
     console.log('✅ Active session:', active ? active.patientName : 'None');
-    
+
     return { displayedAppointments: displayed, activeSession: active };
   }, [appointments, activeSessionFromAPI]);
 
@@ -214,21 +379,14 @@ const DoctorDashboard = () => {
   };
 
   /**
-   * Auto-refresh appointments and stats every minute
+   * Note: Auto-refresh removed - SignalR provides real-time updates
+   * No need for polling when using WebSocket connections
+   * 
+   * SignalR events that trigger updates:
+   * - NewAppointmentToday: Refreshes appointments + stats
+   * - AppointmentCancelled: Refreshes appointments + stats (if implemented)
+   * - SessionCompleted: Refreshes appointments + stats (if implemented)
    */
-  useEffect(() => {
-    
-    const refreshInterval = setInterval(() => {
-      console.log('🔄 Auto-refreshing dashboard data...');
-      refreshAppointments();
-      refreshStats();
-    }, 60000); // Refresh every 60 seconds (1 minute)
-    
-    // Cleanup on unmount
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, [refreshAppointments, refreshStats]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-teal-50/20 to-emerald-50/20">

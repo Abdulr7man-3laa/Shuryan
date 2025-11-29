@@ -15,6 +15,7 @@ export { default as PatientCard } from './components/PatientCard';
 export { default as AppointmentCard } from './components/AppointmentCard';
 export { default as ReviewCard } from './components/ReviewCard';
 export { default as RatingDetailsModal } from './components/RatingDetailsModal';
+export { default as ReviewDetailsModal } from './components/ReviewDetailsModal';
 export { default as PartnerAutocomplete } from './components/PartnerAutocomplete';
 export { default as ActiveSessionWarning } from './components/ActiveSessionWarning';
 export { default as SessionModal } from './components/SessionModal';

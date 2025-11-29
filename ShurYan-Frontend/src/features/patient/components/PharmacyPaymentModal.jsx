@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaTimes, FaCreditCard, FaMobileAlt, FaMoneyBillWave, FaShoppingCart } from 'react-icons/fa';
+import patientService from '@/api/services/patient.service';
 
 /**
  * PharmacyPaymentModal Component
@@ -82,10 +83,17 @@ const PharmacyPaymentModal = ({ isOpen, onClose, orderData, onPaymentConfirm }) 
       }
 
       console.log('💳 Processing payment:', paymentData);
-      
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
+      // Call API to confirm the order
+      const orderId = orderData?.orderId;
+      if (!orderId) {
+        alert('لا يمكن تأكيد الطلب: رقم الطلب غير موجود');
+        return;
+      }
+
+      const confirmResponse = await patientService.confirmPharmacyOrder(orderId, paymentData);
+      console.log('✅ Confirm order response:', confirmResponse);
+
       // Call parent callback
       onPaymentConfirm(paymentData);
       

@@ -6,6 +6,7 @@ import {
   MobileMenu,
 } from './navbar';
 import ChatBot from './ChatBot';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 /**
  * Patient Dashboard Navbar Component
@@ -61,6 +62,9 @@ const PatientNavbar = () => {
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-reverse space-x-4">
+            {/* Notification Bell */}
+            <NotificationCenter />
+
             {/* Profile Menu */}
             <div ref={profileRef}>
               <ProfileDropdown

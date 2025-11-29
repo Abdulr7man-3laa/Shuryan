@@ -13,6 +13,7 @@ export const useDoctorsStore = create(
       (set, get) => ({
         // State
         doctors: [], // Doctors from API (current page)
+        filteredDoctors: [], // Filtered doctors (computed from doctors + filters)
         selectedDoctor: null,
         loading: false,
         error: null,
@@ -36,25 +37,70 @@ export const useDoctorsStore = create(
         // Actions
 
         /**
-         * Fetch doctors from API with server-side pagination
+         * Fetch doctors from API with server-side pagination and filtering
          */
         fetchDoctors: async () => {
           set({ loading: true, error: null });
           try {
-            const { pageNumber, pageSize } = get();
-            
-            console.log('📡 Fetching doctors - Page:', pageNumber, 'Size:', pageSize);
-            
-            const response = await patientService.getDoctorsList({
+            const {
               pageNumber,
               pageSize,
-            });
+              searchTerm,
+              selectedSpecialties,
+              selectedCities,
+              minRating,
+              priceRange,
+              availableToday
+            } = get();
+
+            // Build API parameters with pagination
+            const params = {
+              pageNumber,
+              pageSize,
+            };
+
+            // Add filters to API request (server-side filtering)
+            if (searchTerm?.trim()) {
+              params.SearchTerm = searchTerm.trim();
+            }
+
+            // Backend accepts MedicalSpecialty as single integer, not array
+            // If multiple specialties selected, send the first one for now
+            if (selectedSpecialties.length > 0) {
+              params.MedicalSpecialty = selectedSpecialties[0];
+            }
+
+            // Backend accepts Governorate as integer ID
+            // If multiple governorates selected, send the first one for now
+            if (selectedCities.length > 0) {
+              params.Governorate = selectedCities[0];
+            }
+
+            if (minRating > 0) {
+              params.MinRating = minRating;
+            }
+
+            if (priceRange[0] > 0) {
+              params.MinPrice = priceRange[0];
+            }
+
+            if (priceRange[1] < 1000) {
+              params.MaxPrice = priceRange[1];
+            }
+
+            if (availableToday) {
+              params.AvailableToday = true;
+            }
+
+            console.log('📡 Fetching doctors with filters:', params);
+
+            const response = await patientService.getDoctorsList(params);
 
             console.log('📦 API Response:', response);
 
             if (response.isSuccess) {
               const { data, totalCount, totalPages, hasPreviousPage, hasNextPage } = response.data;
-              
+
               console.log('✅ Doctors loaded:', {
                 count: data?.length,
                 totalCount,
@@ -63,9 +109,10 @@ export const useDoctorsStore = create(
                 hasPreviousPage,
                 hasNextPage
               });
-              
+
               set({
                 doctors: data || [],
+                filteredDoctors: data || [], // Server already filtered, no need for client-side filtering
                 totalCount: totalCount || 0,
                 totalPages: totalPages || 0,
                 hasPreviousPage: hasPreviousPage || false,
@@ -85,10 +132,10 @@ export const useDoctorsStore = create(
         },
 
         /**
-         * Apply client-side filters (UI only for now)
-         * TODO: Send filters to backend when API supports it
+         * Apply client-side filters and update filteredDoctors state
+         * This triggers re-renders when called
          */
-        applyClientFilters: () => {
+        updateFilteredDoctors: () => {
           const {
             doctors,
             searchTerm,
@@ -104,9 +151,17 @@ export const useDoctorsStore = create(
           // 1. Search by name (client-side)
           if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase().trim();
-            filtered = filtered.filter((doc) =>
-              doc.fullName?.toLowerCase().includes(term)
-            );
+            filtered = filtered.filter((doc) => {
+              if (!doc.fullName) return false;
+
+              // Remove common doctor title prefixes for better search
+              const cleanName = doc.fullName
+                .toLowerCase()
+                .replace(/^(د\.|dr\.|دكتور|doctor)\s*/i, '');
+
+              // Also check the original name in case user includes the title
+              return cleanName.includes(term) || doc.fullName.toLowerCase().includes(term);
+            });
           }
 
           // 2. Filter by specialties (client-side)
@@ -144,7 +199,7 @@ export const useDoctorsStore = create(
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-            
+
             filtered = filtered.filter((doc) => {
               if (!doc.nextAvailableSlot) return false;
               const slotDate = new Date(doc.nextAvailableSlot);
@@ -152,7 +207,7 @@ export const useDoctorsStore = create(
             });
           }
 
-          return filtered;
+          set({ filteredDoctors: filtered });
         },
 
         /**
@@ -206,49 +261,55 @@ export const useDoctorsStore = create(
         },
 
         /**
-         * Set search term (UI only for now)
+         * Set search term and fetch from backend
          */
         setSearchTerm: (searchTerm) => {
-          set({ searchTerm });
+          set({ searchTerm, pageNumber: 1 });
+          get().fetchDoctors();
         },
 
         /**
-         * Set selected specialties (UI only for now)
+         * Set selected specialties and fetch from backend
          */
         setSelectedSpecialties: (specialties) => {
-          set({ selectedSpecialties: specialties });
+          set({ selectedSpecialties: specialties, pageNumber: 1 });
+          get().fetchDoctors();
         },
 
         /**
-         * Set selected cities (UI only for now)
+         * Set selected cities and fetch from backend
          */
         setSelectedCities: (cities) => {
-          set({ selectedCities: cities });
+          set({ selectedCities: cities, pageNumber: 1 });
+          get().fetchDoctors();
         },
 
         /**
-         * Set minimum rating filter (UI only for now)
+         * Set minimum rating filter and fetch from backend
          */
         setMinRating: (rating) => {
-          set({ minRating: rating });
+          set({ minRating: rating, pageNumber: 1 });
+          get().fetchDoctors();
         },
 
         /**
-         * Set price range filter (UI only for now)
+         * Set price range filter and fetch from backend
          */
         setPriceRange: (range) => {
-          set({ priceRange: range });
+          set({ priceRange: range, pageNumber: 1 });
+          get().fetchDoctors();
         },
 
         /**
-         * Set available today filter (UI only for now)
+         * Set available today filter and fetch from backend
          */
         setAvailableToday: (available) => {
-          set({ availableToday: available });
+          set({ availableToday: available, pageNumber: 1 });
+          get().fetchDoctors();
         },
 
         /**
-         * Reset all filters
+         * Reset all filters and fetch from backend
          */
         resetFilters: () => {
           set({
@@ -258,7 +319,9 @@ export const useDoctorsStore = create(
             minRating: 0,
             priceRange: [0, 1000],
             availableToday: false,
+            pageNumber: 1,
           });
+          get().fetchDoctors();
         },
 
         /**

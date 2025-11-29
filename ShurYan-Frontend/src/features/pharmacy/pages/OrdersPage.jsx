@@ -1,37 +1,103 @@
-import React, { useState } from 'react';
-import { 
-  FaShoppingCart, 
+import React, { useState, useEffect } from 'react';
+import {
+  FaShoppingCart,
   FaSearch,
-  FaFilter,
   FaCalendar,
   FaUser,
   FaPills,
-  FaMoneyBillWave,
   FaTruck,
   FaCheckCircle,
-  FaClock,
-  FaBox,
   FaChevronDown,
-  FaChevronUp
+  FaChevronUp,
+  FaSpinner
 } from 'react-icons/fa';
-import { MOCK_COMPLETED_ORDERS, ORDER_STATUS } from '../data/mockData';
+import useOrdersStore from '../stores/ordersStore';
 
 /**
- * Pharmacy Orders Page - Completed Orders
+ * Order Status Configuration - Maps numeric status to display info
+ * Status values from API:
+ * 1 = PendingPharmacyResponse
+ * 2 = WaitingForPatientConfirmation
+ * 3 = PendingPayment
+ * 4 = Confirmed
+ * 5 = Delivered
+ */
+const ORDER_STATUS = {
+  1: {
+    label: "في انتظار رد الصيدلية",
+    bgColor: "bg-yellow-100",
+    textColor: "text-yellow-800",
+    borderColor: "border-yellow-300",
+  },
+  2: {
+    label: "في انتظار تأكيد المريض",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-800",
+    borderColor: "border-blue-300",
+  },
+  3: {
+    label: "في انتظار الدفع",
+    bgColor: "bg-orange-100",
+    textColor: "text-orange-800",
+    borderColor: "border-orange-300",
+  },
+  4: {
+    label: "تم تأكيد الطلب",
+    bgColor: "bg-green-100",
+    textColor: "text-green-800",
+    borderColor: "border-green-300",
+  },
+  5: {
+    label: "تم التسليم",
+    bgColor: "bg-emerald-100",
+    textColor: "text-emerald-800",
+    borderColor: "border-emerald-300",
+  },
+};
+
+/**
+ * Pharmacy Orders Page - All Orders
  * @component
  */
 const OrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [expandedOrder, setExpandedOrder] = useState(null);
 
-  // Filter orders
-  const filteredOrders = MOCK_COMPLETED_ORDERS.filter(order => {
-    const matchesSearch = order.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  // Get data from store
+  const {
+    orders,
+    totalCount,
+    loading,
+    error,
+    currentPage,
+    pageSize,
+    fetchOrders,
+    fetchOrderDetails,
+    selectedOrder,
+    orderDetailsLoading,
+    clearOrderDetails
+  } = useOrdersStore();
+
+  // Fetch orders on mount
+  useEffect(() => {
+    fetchOrders(1, 20, false); // Use lightweight endpoint (not detailed)
+  }, []);
+
+  // Filter orders by search term
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch =
+      order.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.prescriptionNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
+
+  // Calculate stats from filtered orders
+  const stats = {
+    total: filteredOrders.length,
+    delivered: filteredOrders.filter(o => o.status === 5).length,
+    confirmed: filteredOrders.filter(o => o.status === 4).length,
+    pending: filteredOrders.filter(o => o.status === 2).length,
+  };
 
   // Format date
   const formatDate = (dateString) => {
@@ -46,26 +112,40 @@ const OrdersPage = () => {
   };
 
   // Toggle order details
-  const toggleOrder = (orderId) => {
-    setExpandedOrder(expandedOrder === orderId ? null : orderId);
+  const toggleOrder = async (orderId) => {
+    if (expandedOrder === orderId) {
+      setExpandedOrder(null);
+      clearOrderDetails();
+    } else {
+      setExpandedOrder(orderId);
+      await fetchOrderDetails(orderId);
+    }
+  };
+
+  // Get order details (either from selectedOrder or from list)
+  const getOrderDetails = (orderId) => {
+    if (selectedOrder && selectedOrder.orderId === orderId) {
+      return selectedOrder;
+    }
+    return null;
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        
+
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl lg:text-5xl font-black mb-3 leading-tight" style={{ 
+          <h1 className="text-4xl lg:text-5xl font-black mb-3 leading-tight" style={{
             background: 'linear-gradient(to right, #00b19f, #00d4be)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
           }}>
-            الطلبات المكتملة
+            الطلبات
           </h1>
           <p className="text-slate-600 text-lg">
-            جميع الطلبات التي تمت معالجتها بنجاح
+            جميع الطلبات الخاصة بالصيدلية
           </p>
         </div>
 
@@ -75,7 +155,7 @@ const OrdersPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500 font-semibold mb-1">إجمالي الطلبات</p>
-                <p className="text-3xl font-black text-blue-600">{MOCK_COMPLETED_ORDERS.length}</p>
+                <p className="text-3xl font-black text-blue-600">{stats.total}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <FaShoppingCart className="text-2xl text-blue-600" />
@@ -87,9 +167,7 @@ const OrdersPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500 font-semibold mb-1">تم التسليم</p>
-                <p className="text-3xl font-black text-green-600">
-                  {MOCK_COMPLETED_ORDERS.filter(o => o.status === 'delivered').length}
-                </p>
+                <p className="text-3xl font-black text-green-600">{stats.delivered}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                 <FaCheckCircle className="text-2xl text-green-600" />
@@ -100,10 +178,8 @@ const OrdersPage = () => {
           <div className="bg-white rounded-xl p-5 border-2 border-amber-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500 font-semibold mb-1">قيد التوصيل</p>
-                <p className="text-3xl font-black text-amber-600">
-                  {MOCK_COMPLETED_ORDERS.filter(o => o.status === 'out_for_delivery').length}
-                </p>
+                <p className="text-sm text-slate-500 font-semibold mb-1">تم التأكيد</p>
+                <p className="text-3xl font-black text-amber-600">{stats.confirmed}</p>
               </div>
               <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
                 <FaTruck className="text-2xl text-amber-600" />
@@ -114,200 +190,212 @@ const OrdersPage = () => {
           <div className="bg-white rounded-xl p-5 border-2 border-purple-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500 font-semibold mb-1">قيد التحضير</p>
-                <p className="text-3xl font-black text-purple-600">
-                  {MOCK_COMPLETED_ORDERS.filter(o => o.status === 'preparation_in_progress').length}
-                </p>
+                <p className="text-sm text-slate-500 font-semibold mb-1">في الانتظار</p>
+                <p className="text-3xl font-black text-purple-600">{stats.pending}</p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <FaBox className="text-2xl text-purple-600" />
+                <FaSpinner className="text-2xl text-purple-600" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Search */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="ابحث برقم الطلب أو اسم المريض..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-12 pl-4 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-[#00b19f] focus:ring-2 focus:ring-[#00b19f]/20 outline-none transition-all"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="relative">
-              <FaFilter className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full pr-12 pl-4 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-[#00b19f] focus:ring-2 focus:ring-[#00b19f]/20 outline-none transition-all appearance-none"
-              >
-                <option value="all">جميع الحالات</option>
-                <option value="confirmed">تم التأكيد</option>
-                <option value="preparation_in_progress">قيد التحضير</option>
-                <option value="ready_for_pickup">جاهز للاستلام</option>
-                <option value="out_for_delivery">قيد التوصيل</option>
-                <option value="delivered">تم التسليم</option>
-              </select>
-            </div>
+          <div className="relative">
+            <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="ابحث برقم الوصفة أو اسم المريض..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pr-12 pl-4 py-3 border-2 border-slate-200 rounded-xl font-semibold focus:border-[#00b19f] focus:ring-2 focus:ring-[#00b19f]/20 outline-none transition-all"
+            />
           </div>
         </div>
 
-        {/* Orders List */}
-        <div className="space-y-4">
-          {filteredOrders.length > 0 ? (
-            filteredOrders.map((order) => {
-              const statusConfig = ORDER_STATUS[order.status];
-              const isExpanded = expandedOrder === order.id;
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-16 text-center">
+            <FaSpinner className="text-4xl text-[#00b19f] animate-spin mx-auto mb-4" />
+            <p className="text-slate-600 text-lg">جاري تحميل الطلبات...</p>
+          </div>
+        )}
 
-              return (
-                <div
-                  key={order.id}
-                  className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 overflow-hidden transition-all duration-200 hover:shadow-md"
-                >
-                  {/* Order Header */}
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 rounded-2xl border-2 border-red-200 p-6 text-center">
+            <p className="text-red-600 font-semibold">{error}</p>
+          </div>
+        )}
+
+        {/* Orders List */}
+        {!loading && !error && (
+          <div className="space-y-4">
+            {filteredOrders.length > 0 ? (
+              filteredOrders.map((order) => {
+                const statusConfig = ORDER_STATUS[order.status] || ORDER_STATUS[1];
+                const isExpanded = expandedOrder === order.orderId;
+                const orderDetails = getOrderDetails(order.orderId);
+
+                return (
                   <div
-                    className="p-6 cursor-pointer hover:bg-slate-50 transition-colors"
-                    onClick={() => toggleOrder(order.id)}
+                    key={order.orderId}
+                    className="bg-white rounded-2xl shadow-sm border-2 border-slate-100 overflow-hidden transition-all duration-200 hover:shadow-md"
                   >
-                    <div className="flex items-center justify-between gap-4">
-                      {/* Left: Order Info */}
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#00b19f] to-[#00d4be] rounded-xl flex items-center justify-center text-white font-black text-lg shadow-md">
-                          #{order.id}
+                    {/* Order Header */}
+                    <div
+                      className="p-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                      onClick={() => toggleOrder(order.orderId)}
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        {/* Left: Order Info */}
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="w-12 h-12 bg-gradient-to-br from-[#00b19f] to-[#00d4be] rounded-xl flex items-center justify-center text-white font-black text-lg shadow-md">
+                            <FaShoppingCart />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-black text-slate-800 mb-1">{order.prescriptionNumber}</h3>
+                            <div className="flex items-center gap-4 text-sm text-slate-600">
+                              <span className="flex items-center gap-1">
+                                <FaUser className="text-xs" />
+                                {order.patientName}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <FaCalendar className="text-xs" />
+                                {formatDate(order.orderDate)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-black text-slate-800 mb-1">{order.orderNumber}</h3>
-                          <div className="flex items-center gap-4 text-sm text-slate-600">
-                            <span className="flex items-center gap-1">
-                              <FaUser className="text-xs" />
-                              {order.patientName}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <FaCalendar className="text-xs" />
-                              {formatDate(order.orderDate)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <FaPills className="text-xs" />
-                              {order.medications.length} دواء
-                            </span>
+
+                        {/* Right: Status & Price */}
+                        <div className="flex items-center gap-4">
+                          <div className="text-left">
+                            <p className="text-sm text-slate-500 font-semibold mb-1">الإجمالي</p>
+                            <p className="text-2xl font-black text-slate-800">{order.totalCost} ج.م</p>
+                          </div>
+
+                          <span className={`px-4 py-2 rounded-xl text-sm font-bold ${statusConfig.bgColor} ${statusConfig.textColor} border-2 ${statusConfig.borderColor}`}>
+                            {statusConfig.label}
+                          </span>
+
+                          <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                            {isExpanded ?
+                              <FaChevronUp className="text-slate-600" /> :
+                              <FaChevronDown className="text-slate-600" />
+                            }
                           </div>
                         </div>
                       </div>
-
-                      {/* Right: Status & Price */}
-                      <div className="flex items-center gap-4">
-                        <div className="text-left">
-                          <p className="text-sm text-slate-500 font-semibold mb-1">الإجمالي</p>
-                          <p className="text-2xl font-black text-slate-800">{order.totalPrice} ج.م</p>
-                        </div>
-
-                        <span className={`px-4 py-2 rounded-xl text-sm font-bold ${statusConfig.bgColor} ${statusConfig.textColor} border-2 ${statusConfig.borderColor}`}>
-                          {statusConfig.label}
-                        </span>
-
-                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                          {isExpanded ? 
-                            <FaChevronUp className="text-slate-600" /> : 
-                            <FaChevronDown className="text-slate-600" />
-                          }
-                        </div>
-                      </div>
                     </div>
-                  </div>
 
-                  {/* Order Details (Expanded) */}
-                  {isExpanded && (
-                    <div className="border-t-2 border-slate-100 p-6 bg-slate-50 animate-fadeIn">
-                      {/* Medications List */}
-                      <div className="mb-6">
-                        <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
-                          <FaPills className="text-[#00b19f]" />
-                          الأدوية المطلوبة
-                        </h4>
-                        <div className="space-y-3">
-                          {order.medications.map((med, index) => (
-                            <div key={index} className="bg-white rounded-xl p-4 border-2 border-slate-200">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-slate-800 text-white rounded-lg flex items-center justify-center text-sm font-bold">
-                                    {index + 1}
-                                  </div>
-                                  <div>
-                                    <h5 className="font-bold text-slate-800">{med.name}</h5>
-                                    <p className="text-sm text-slate-500">
-                                      {med.dosage} • {med.frequency} • {med.duration}
+                    {/* Order Details (Expanded) */}
+                    {isExpanded && (
+                      <div className="border-t-2 border-slate-100 p-6 bg-slate-50 animate-fadeIn">
+                        {orderDetailsLoading ? (
+                          <div className="text-center py-8">
+                            <FaSpinner className="text-3xl text-[#00b19f] animate-spin mx-auto mb-3" />
+                            <p className="text-slate-600">جاري تحميل التفاصيل...</p>
+                          </div>
+                        ) : orderDetails ? (
+                          <>
+                            {/* Medications List */}
+                            {orderDetails.medications && orderDetails.medications.length > 0 && (
+                              <div className="mb-6">
+                                <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
+                                  <FaPills className="text-[#00b19f]" />
+                                  الأدوية المطلوبة
+                                </h4>
+                                <div className="space-y-3">
+                                  {orderDetails.medications.map((med, index) => (
+                                    <div key={index} className="bg-white rounded-xl p-4 border-2 border-slate-200">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-8 h-8 bg-slate-800 text-white rounded-lg flex items-center justify-center text-sm font-bold">
+                                            {index + 1}
+                                          </div>
+                                          <div>
+                                            <h5 className="font-bold text-slate-800">{med.medicationName}</h5>
+                                            <p className="text-sm text-slate-500">
+                                              {med.dosage} • {med.frequency} • {med.duration}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="text-left">
+                                          <p className="text-sm text-slate-500">السعر</p>
+                                          <p className="text-lg font-black text-slate-800">{med.price} ج.م</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Delivery Info */}
+                            {orderDetails.deliveryInfo && (
+                              <div className="mb-6">
+                                <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
+                                  <FaTruck className="text-[#00b19f]" />
+                                  معلومات التوصيل
+                                </h4>
+                                <div className="bg-white rounded-xl p-4 border-2 border-slate-200">
+                                  <div className="space-y-2">
+                                    <p className="text-slate-700 font-semibold">
+                                      <span className="text-slate-500">الاسم: </span>
+                                      {orderDetails.deliveryInfo.patientName}
+                                    </p>
+                                    <p className="text-slate-700 font-semibold">
+                                      <span className="text-slate-500">الهاتف: </span>
+                                      {orderDetails.deliveryInfo.patientPhone}
+                                    </p>
+                                    <p className="text-slate-700 font-semibold">
+                                      <span className="text-slate-500">العنوان: </span>
+                                      {orderDetails.deliveryInfo.address}
                                     </p>
                                   </div>
                                 </div>
-                                <div className="text-left">
-                                  <p className="text-sm text-slate-500">السعر</p>
-                                  <p className="text-lg font-black text-slate-800">{med.price} ج.م</p>
-                                </div>
+                              </div>
+                            )}
+
+                            {/* Total Summary */}
+                            <div className="bg-gradient-to-r from-[#00b19f] to-[#00d4be] rounded-xl p-6 text-white">
+                              <div className="flex items-center justify-between mb-3">
+                                <span className="font-semibold">رسوم التوصيل:</span>
+                                <span className="font-bold">{orderDetails.deliveryFee} ج.م</span>
+                              </div>
+                              <div className="border-t-2 border-white/30 pt-3 flex items-center justify-between">
+                                <span className="text-xl font-black">الإجمالي النهائي:</span>
+                                <span className="text-3xl font-black">{orderDetails.totalCost} ج.م</span>
                               </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Delivery Info */}
-                      {order.deliveryAddress && (
-                        <div className="mb-6">
-                          <h4 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
-                            <FaTruck className="text-[#00b19f]" />
-                            معلومات التوصيل
-                          </h4>
-                          <div className="bg-white rounded-xl p-4 border-2 border-slate-200">
-                            <p className="text-slate-700 font-semibold mb-2">{order.deliveryAddress}</p>
-                            <div className="flex items-center gap-4 text-sm text-slate-600">
-                              <span>رسوم التوصيل: {order.deliveryFee} ج.م</span>
-                              {order.deliveryNotes && <span>• {order.deliveryNotes}</span>}
-                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-slate-600">لا توجد تفاصيل متاحة</p>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Total Summary */}
-                      <div className="bg-gradient-to-r from-[#00b19f] to-[#00d4be] rounded-xl p-6 text-white">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-semibold">إجمالي الأدوية:</span>
-                          <span className="font-bold">{order.subtotal} ج.م</span>
-                        </div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-semibold">رسوم التوصيل:</span>
-                          <span className="font-bold">{order.deliveryFee} ج.م</span>
-                        </div>
-                        <div className="border-t-2 border-white/30 pt-3 flex items-center justify-between">
-                          <span className="text-xl font-black">الإجمالي النهائي:</span>
-                          <span className="text-3xl font-black">{order.totalPrice} ج.م</span>
-                        </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              /* Empty State */
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-16 text-center">
+                <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm" style={{
+                  background: 'linear-gradient(to bottom right, rgba(0, 177, 159, 0.1), rgba(0, 212, 190, 0.1))'
+                }}>
+                  <FaShoppingCart className="text-4xl" style={{ color: '#00b19f' }} />
                 </div>
-              );
-            })
-          ) : (
-            /* Empty State */
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-16 text-center">
-              <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm" style={{
-                background: 'linear-gradient(to bottom right, rgba(0, 177, 159, 0.1), rgba(0, 212, 190, 0.1))'
-              }}>
-                <FaShoppingCart className="text-4xl" style={{ color: '#00b19f' }} />
+                <h3 className="text-xl font-bold text-slate-700 mb-3">لا توجد طلبات</h3>
+                <p className="text-slate-500 text-base">لا توجد طلبات مطابقة لمعايير البحث</p>
               </div>
-              <h3 className="text-xl font-bold text-slate-700 mb-3">لا توجد طلبات مطابقة</h3>
-              <p className="text-slate-500 text-base">جرب تغيير معايير البحث أو الفلتر</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

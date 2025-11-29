@@ -10,6 +10,7 @@ export const useDoctors = ({ autoFetch = true } = {}) => {
   const {
     // State
     doctors,
+    filteredDoctors,
     selectedDoctor,
     loading,
     error,
@@ -32,7 +33,6 @@ export const useDoctors = ({ autoFetch = true } = {}) => {
 
     // Actions
     fetchDoctors,
-    applyClientFilters,
     fetchDoctorDetails,
     goToNextPage,
     goToPreviousPage,
@@ -58,6 +58,7 @@ export const useDoctors = ({ autoFetch = true } = {}) => {
   return {
     // State
     doctors,
+    filteredDoctors,
     selectedDoctor,
     loading,
     error,
@@ -80,7 +81,6 @@ export const useDoctors = ({ autoFetch = true } = {}) => {
 
     // Actions
     fetchDoctors,
-    applyClientFilters,
     fetchDoctorDetails,
     goToNextPage,
     goToPreviousPage,

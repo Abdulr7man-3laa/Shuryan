@@ -4,6 +4,7 @@ import {
   FaCheck, FaChartLine, FaAward, FaUsers, FaRegStar
 } from 'react-icons/fa';
 import ReviewCard from '../components/ReviewCard';
+import ReviewDetailsModal from '../components/ReviewDetailsModal';
 import useReviews from '../hooks/useReviews';
 
 /**
@@ -17,17 +18,19 @@ const ReviewsPage = () => {
     pagination,
     filters,
     loading,
-    isLoadingReply,
     averageRating,
     totalReviews,
     ratingDistribution,
-    setFilter,
+    selectedReview,
+    setMinRatingFilter,
     goToNextPage,
     goToPreviousPage,
-    replyToReview
+    fetchReviewDetails,
+    setSelectedReview
   } = useReviews();
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   const filterRef = useRef(null);
 
@@ -43,11 +46,24 @@ const ReviewsPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle reply to review
-  const handleReplyToReview = async (reviewId, replyText) => {
-    const result = await replyToReview(reviewId, replyText);
-    return result.success;
+  // Handle view review details
+  const handleViewDetails = async (review) => {
+    const result = await fetchReviewDetails(review.reviewId);
+    if (result.success) {
+      setIsDetailsModalOpen(true);
+    }
   };
+
+  // Handle close details modal
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false);
+    setSelectedReview(null);
+  };
+
+  // Client-side filtering by rating
+  const filteredReviews = filters.minRating
+    ? reviews.filter(review => review.rating >= filters.minRating)
+    : reviews;
 
   // Get filter label
   const getFilterLabel = () => {
@@ -134,7 +150,7 @@ const ReviewsPage = () => {
                     <div className="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden z-50">
                       <div className="py-1">
                         <button
-                          onClick={() => { setFilter('minRating', null); setIsFilterOpen(false); }}
+                          onClick={() => { setMinRatingFilter(null); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
                             !filters.minRating
                               ? 'bg-teal-50 text-teal-700 font-bold'
@@ -145,7 +161,7 @@ const ReviewsPage = () => {
                           {!filters.minRating && <FaCheck className="w-4 h-4 text-teal-600" />}
                         </button>
                         <button
-                          onClick={() => { setFilter('minRating', 5); setIsFilterOpen(false); }}
+                          onClick={() => { setMinRatingFilter(5); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
                             filters.minRating === 5
                               ? 'bg-teal-50 text-teal-700 font-bold'
@@ -159,7 +175,7 @@ const ReviewsPage = () => {
                           {filters.minRating === 5 && <FaCheck className="w-4 h-4 text-teal-600" />}
                         </button>
                         <button
-                          onClick={() => { setFilter('minRating', 4); setIsFilterOpen(false); }}
+                          onClick={() => { setMinRatingFilter(4); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
                             filters.minRating === 4
                               ? 'bg-teal-50 text-teal-700 font-bold'
@@ -173,7 +189,7 @@ const ReviewsPage = () => {
                           {filters.minRating === 4 && <FaCheck className="w-4 h-4 text-teal-600" />}
                         </button>
                         <button
-                          onClick={() => { setFilter('minRating', 3); setIsFilterOpen(false); }}
+                          onClick={() => { setMinRatingFilter(3); setIsFilterOpen(false); }}
                           className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
                             filters.minRating === 3
                               ? 'bg-teal-50 text-teal-700 font-bold'
@@ -247,7 +263,7 @@ const ReviewsPage = () => {
               </div>
             ))}
           </div>
-        ) : reviews.length === 0 ? (
+        ) : filteredReviews.length === 0 ? (
           /* Empty State */
           <div className="bg-white rounded-2xl p-16 text-center shadow-lg border border-slate-200">
             <div className="w-32 h-32 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
@@ -262,12 +278,11 @@ const ReviewsPage = () => {
           /* Reviews Grid */
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {reviews.map((review) => (
+              {filteredReviews.map((review) => (
                 <ReviewCard 
-                  key={review.id} 
+                  key={review.reviewId} 
                   review={review} 
-                  onReply={handleReplyToReview}
-                  isLoadingReply={isLoadingReply}
+                  onViewDetails={() => handleViewDetails(review)}
                 />
               ))}
             </div>
@@ -298,18 +313,25 @@ const ReviewsPage = () => {
             )}
 
             {/* Results Count */}
-            {reviews.length > 0 && (
+            {filteredReviews.length > 0 && (
               <div className="mt-8 text-center">
                 <div className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-xl shadow-sm border border-slate-200">
                   <FaChartLine className="text-teal-600" />
                   <span className="text-slate-700 font-semibold">
-                    عرض {reviews.length} من {totalReviews} تقييم
+                    عرض {filteredReviews.length} من {totalReviews} تقييم
                   </span>
                 </div>
               </div>
             )}
           </>
         )}
+
+        {/* Review Details Modal */}
+        <ReviewDetailsModal
+          review={selectedReview}
+          isOpen={isDetailsModalOpen}
+          onClose={handleCloseDetailsModal}
+        />
       </div>
     </div>
   );

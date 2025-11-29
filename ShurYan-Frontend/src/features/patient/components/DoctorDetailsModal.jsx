@@ -4,13 +4,15 @@
  */
 
 import { useEffect, useState } from 'react';
-import { FaTimes, FaStar, FaMapMarkerAlt, FaPhone, FaClock, FaBriefcaseMedical, FaImages, FaWhatsapp } from 'react-icons/fa';
+import { FaTimes, FaStar, FaMapMarkerAlt, FaPhone, FaClock, FaBriefcaseMedical, FaImages, FaWhatsapp, FaComments } from 'react-icons/fa';
 import { useDoctors } from '../hooks/useDoctors';
 import { getSpecialtyById } from '@/utils/constants';
+import DoctorReviewsModal from './DoctorReviewsModal';
 
 const DoctorDetailsModal = ({ doctorId, isOpen, onClose, onBook }) => {
   const { fetchDoctorDetails, loading } = useDoctors({ autoFetch: false });
   const [doctor, setDoctor] = useState(null);
+  const [showReviews, setShowReviews] = useState(false);
 
   useEffect(() => {
     if (isOpen && doctorId) {
@@ -113,14 +115,27 @@ const DoctorDetailsModal = ({ doctorId, isOpen, onClose, onBook }) => {
                   )}
                 </div>
                 
-                {/* Rating */}
-                {doctor.averageRating && (
-                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-lg inline-flex mb-3">
-                    <FaStar className="text-amber-300" />
-                    <span className="font-bold">{doctor.averageRating.toFixed(1)}</span>
-                    <span className="text-sm text-white/90">({doctor.totalReviews} تقييم)</span>
-                  </div>
-                )}
+                {/* Rating & Reviews Button */}
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                  {doctor.averageRating && (
+                    <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-lg">
+                      <FaStar className="text-amber-300" />
+                      <span className="font-bold">{doctor.averageRating.toFixed(1)}</span>
+                      <span className="text-sm text-white/90">({doctor.totalReviews} تقييم)</span>
+                    </div>
+                  )}
+                  
+                  {/* Reviews Button */}
+                  {doctor.totalReviews > 0 && (
+                    <button
+                      onClick={() => setShowReviews(true)}
+                      className="flex items-center gap-2 bg-white text-teal-600 px-4 py-1.5 rounded-lg font-bold hover:bg-white/90 transition-all hover:scale-105 shadow-lg"
+                    >
+                      <FaComments className="text-lg" />
+                      <span>آراء المرضى</span>
+                    </button>
+                  )}
+                </div>
 
                 {/* Biography */}
                 {doctor.biography && (
@@ -316,6 +331,16 @@ const DoctorDetailsModal = ({ doctorId, isOpen, onClose, onBook }) => {
           )}
         </div>
       </div>
+
+      {/* Reviews Modal */}
+      {doctor && (
+        <DoctorReviewsModal
+          doctorId={doctorId}
+          doctorName={doctor.fullName}
+          isOpen={showReviews}
+          onClose={() => setShowReviews(false)}
+        />
+      )}
     </div>
   );
 };

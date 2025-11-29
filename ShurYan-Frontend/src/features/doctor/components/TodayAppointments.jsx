@@ -6,7 +6,14 @@ import { FaCalendarAlt, FaPlay, FaFilter, FaClock, FaChevronDown, FaCheck, FaSpi
  * Simple, elegant design with brand colors
  * @component
  */
-const TodayAppointments = ({ appointments, filterType = 'all', onStartAppointment, onFilterChange, loading = false, sessionLoading = null }) => {
+const TodayAppointments = ({ 
+  appointments, 
+  filterType = 'all', 
+  onStartAppointment, 
+  onFilterChange, 
+  loading = false, 
+  sessionLoading = null
+}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -185,7 +192,7 @@ const TodayAppointments = ({ appointments, filterType = 'all', onStartAppointmen
               <p className="text-slate-500 text-lg font-medium">لا توجد مواعيد اليوم</p>
             </div>
           ) : (
-            appointments?.map((appointment, index) => {
+            appointments?.map((appointment) => {
               const isInProgress = appointment.apiStatus === 'InProgress' || appointment.apiStatus === 3;
               
               return (

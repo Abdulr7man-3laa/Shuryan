@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  FaEye, FaShoppingCart, FaUserMd, FaCalendarAlt, 
-  FaStethoscope, FaHashtag, FaExclamationCircle, FaFileAlt, FaInfoCircle, FaPrescriptionBottleAlt, FaClipboardList 
+  FaEye, FaShoppingCart, FaUserMd, FaCalendarAlt,
+  FaStethoscope, FaHashtag, FaExclamationCircle, FaFileAlt, FaInfoCircle, FaPrescriptionBottleAlt, FaClipboardList
 } from 'react-icons/fa';
 import PrescriptionDetailsModal from '../../doctor/components/PrescriptionDetailsModal';
 import OrderPrescriptionModal from '../components/OrderPrescriptionModal';
@@ -29,20 +29,20 @@ const PrescriptionsPage = () => {
   const fetchPrescriptions = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log('💊 Fetching prescriptions for patient:', user?.id);
       const response = await patientService.getMyPrescriptions();
-      
+
       console.log('✅ Prescriptions response:', response);
-      
+
       // Map appointmentType to Arabic consultationType
       const mappedPrescriptions = response.map(prescription => ({
         ...prescription,
         consultationType: prescription.appointmentType === 'regular' ? 'كشف جديد' : 'إعادة كشف',
         patientId: user?.id
       }));
-      
+
       // Log prescription statuses for debugging
       console.log('📊 Prescription statuses:', mappedPrescriptions.map(p => ({
         id: p.id,
@@ -52,7 +52,7 @@ const PrescriptionsPage = () => {
         statusText: getPrescriptionStatusText(p.status),
         hasReports: p.status === 5
       })));
-      
+
       setPrescriptions(mappedPrescriptions);
       setLoading(false);
     } catch (err) {
@@ -246,7 +246,7 @@ const PrescriptionsPage = () => {
             /* Prescriptions List */
             <div className="space-y-4">
               {prescriptions.map((prescription, index) => (
-                <div 
+                <div
                   key={prescription.id}
                   className="bg-white rounded-2xl border-2 border-slate-200 hover:border-teal-400 transition-all shadow-sm hover:shadow-lg p-6"
                 >
@@ -255,7 +255,7 @@ const PrescriptionsPage = () => {
                     <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0">
                       {index + 1}
                     </div>
-                    
+
                     {/* Prescription Info */}
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Right Column */}
@@ -266,7 +266,7 @@ const PrescriptionsPage = () => {
                           <span className="text-xs font-semibold text-teal-700">رقم الروشتة:</span>
                           <span className="text-sm font-black text-slate-900">{prescription.prescriptionNumber}</span>
                         </div>
-                        
+
                         {/* Doctor Name */}
                         <div className="flex items-center gap-2">
                           <FaUserMd className="text-teal-600 text-sm" />
@@ -383,6 +383,12 @@ const PrescriptionsPage = () => {
           setPrescriptionForReports(null);
         }}
         prescription={prescriptionForReports}
+        onNewOrder={(prescription) => {
+          // Close reports modal and open order modal with the same prescription
+          setIsReportsModalOpen(false);
+          setPrescriptionToOrder(prescription);
+          setIsOrderModalOpen(true);
+        }}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   FaSearch, FaTimes, FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
 import FilterChips from '../components/FilterChips';
@@ -22,7 +22,7 @@ const SearchDoctorsPage = () => {
 
   // Use doctors hook - all filters from store
   const {
-    doctors,
+    filteredDoctors,
     loading,
     error,
     pageNumber,
@@ -161,7 +161,7 @@ const SearchDoctorsPage = () => {
               availableToday={availableToday}
               setAvailableToday={setAvailableToday}
               onReset={handleResetFilters}
-              resultsCount={totalCount}
+              resultsCount={filteredDoctors.length}
             />
           </div>
 
@@ -200,9 +200,9 @@ const SearchDoctorsPage = () => {
             )}
 
             {/* Doctors Grid */}
-            {!loading && !error && doctors.length > 0 && (
+            {!loading && !error && filteredDoctors.length > 0 && (
               <div className="space-y-4">
-                {doctors.map(doctor => (
+                {filteredDoctors.map(doctor => (
                   <DoctorCard
                     key={doctor.id}
                     doctor={doctor}
@@ -214,7 +214,7 @@ const SearchDoctorsPage = () => {
             )}
 
             {/* Empty State */}
-            {!loading && !error && doctors.length === 0 && (
+            {!loading && !error && filteredDoctors.length === 0 && (
               <div className="bg-white rounded-2xl shadow-lg border-2 border-slate-200 p-12 text-center">
                 <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FaSearch className="text-slate-400 text-4xl" />
@@ -231,11 +231,10 @@ const SearchDoctorsPage = () => {
                 <button
                   onClick={handlePreviousPage}
                   disabled={!hasPreviousPage}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
-                    hasPreviousPage
-                      ? 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg hover:shadow-xl'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${hasPreviousPage
+                    ? 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg hover:shadow-xl'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
                 >
                   <FaChevronRight />
                   <span>السابق</span>
@@ -253,11 +252,10 @@ const SearchDoctorsPage = () => {
                 <button
                   onClick={handleNextPage}
                   disabled={!hasNextPage}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
-                    hasNextPage
-                      ? 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg hover:shadow-xl'
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${hasNextPage
+                    ? 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg hover:shadow-xl'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
                 >
                   <span>التالي</span>
                   <FaChevronLeft />

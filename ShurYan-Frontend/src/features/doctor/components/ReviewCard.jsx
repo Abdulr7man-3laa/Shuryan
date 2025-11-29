@@ -1,24 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
-  FaStar, FaStarHalfAlt, FaRegStar, FaQuoteRight, FaCheckCircle, 
-  FaReply, FaClock, FaEdit, FaEye, FaHeart, FaThumbsUp,
-  FaComments, FaBroom, FaDollarSign, FaInfoCircle
+  FaStar, FaStarHalfAlt, FaRegStar, FaQuoteRight,
+  FaEdit, FaEye, FaInfoCircle
 } from 'react-icons/fa';
-import RatingDetailsModal from './RatingDetailsModal';
 
 /**
  * ReviewCard Component - Premium Design
- * Elegant card for displaying patient reviews based on new backend model
- * Shows multiple rating categories and doctor reply functionality
+ * Elegant card for displaying patient reviews from API
  */
-const ReviewCard = ({ review, onReply, isLoadingReply }) => {
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+const ReviewCard = ({ review, onViewDetails }) => {
 
   // Get patient initials
   const getInitials = () => {
-    if (!review.patient?.fullName && !review.patientName) return '؟';
-    const name = review.patient?.fullName || review.patientName;
-    const names = name.split(' ');
+    if (!review.patientName) return '؟';
+    const names = review.patientName.split(' ');
     if (names.length >= 2) {
       return names[0].charAt(0) + names[names.length - 1].charAt(0);
     }
@@ -69,16 +64,9 @@ const ReviewCard = ({ review, onReply, isLoadingReply }) => {
     });
   };
 
-  // Calculate average rating
-  const averageRating = review.averageRating || (
-    (review.overallSatisfaction + review.waitingTime + review.communicationQuality + 
-     review.clinicCleanliness + review.valueForMoney) / 5
-  );
-
-  // Get patient name
-  const patientName = review.isAnonymous 
-    ? 'مريض مجهول' 
-    : (review.patient?.fullName || review.patientName || 'مريض');
+  // Get patient name and rating
+  const patientName = review.patientName || 'مريض';
+  const rating = review.rating || 0;
 
   return (
     <article className="group relative bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-200/80 overflow-hidden">
@@ -95,21 +83,15 @@ const ReviewCard = ({ review, onReply, isLoadingReply }) => {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              {review.patient?.profileImageUrl ? (
+              {review.patientProfileImage ? (
                 <img
-                  src={review.patient.profileImageUrl}
+                  src={review.patientProfileImage}
                   alt={patientName}
                   className="w-14 h-14 rounded-xl object-cover ring-2 ring-slate-200 group-hover:ring-teal-400 transition-all duration-300"
                 />
               ) : (
                 <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center text-white text-lg font-bold ring-2 ring-slate-200 group-hover:ring-teal-400 transition-all duration-300">
                   {getInitials()}
-                </div>
-              )}
-              {/* Anonymous badge */}
-              {review.isAnonymous && (
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-slate-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <FaEye className="text-white text-[10px]" />
                 </div>
               )}
             </div>
@@ -120,14 +102,8 @@ const ReviewCard = ({ review, onReply, isLoadingReply }) => {
                 {patientName}
               </h3>
               <p className="text-sm text-slate-500 font-medium">
-                {formatDate(review.createdAt || review.date)}
+                {formatDate(review.createdAt)}
               </p>
-              {review.isEdited && (
-                <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-                  <FaEdit className="text-[10px]" />
-                  تم التعديل
-                </p>
-              )}
             </div>
           </div>
 
@@ -135,7 +111,10 @@ const ReviewCard = ({ review, onReply, isLoadingReply }) => {
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100 px-3 py-2 rounded-xl border border-amber-200 shadow-sm">
               <FaStar className="text-amber-500 text-sm" />
-              <span className="text-lg font-black text-amber-700">{averageRating.toFixed(1)}</span>
+              <span className="text-lg font-black text-amber-700">{rating.toFixed(1)}</span>
+            </div>
+            <div className="flex gap-1">
+              {renderStars(rating)}
             </div>
           </div>
         </div>
@@ -155,7 +134,7 @@ const ReviewCard = ({ review, onReply, isLoadingReply }) => {
         {/* Details Button - Full Width */}
         <div className="mb-1 mt-6">
           <button
-            onClick={() => setShowDetailsModal(true)}
+            onClick={onViewDetails}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl hover:from-teal-100 hover:to-emerald-100 hover:border-teal-300 transition-all duration-200 hover:scale-[1.02]"
           >
             <FaInfoCircle className="text-teal-500 text-sm" />
@@ -165,15 +144,6 @@ const ReviewCard = ({ review, onReply, isLoadingReply }) => {
           </button>
         </div>
       </div>
-
-      {/* Rating Details Modal */}
-      <RatingDetailsModal
-        review={review}
-        isOpen={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
-        onReply={onReply}
-        isLoadingReply={isLoadingReply}
-      />
     </article>
   );
 };

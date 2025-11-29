@@ -8,11 +8,10 @@ import { GOOGLE_CONFIG, isGoogleConfigured } from '@/utils/constants';
 import { useToast } from '@/hooks';
 import Button from '@/components/ui/Button';
 
-const GoogleLoginButton = ({ userType = 'patient' }) => {
+const GoogleLoginButton = ({ userType = 'patient' }) => { // eslint-disable-line no-unused-vars
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
-  const { login } = useAuthStore();
 
   // Check if Google OAuth is configured
   const isConfigured = isGoogleConfigured();
@@ -29,49 +28,141 @@ const GoogleLoginButton = ({ userType = 'patient' }) => {
    */
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
+    
     try {
-      console.log('🔐 Google login successful, sending to backend...');
-      console.log('📦 Credential:', credentialResponse);
-      
-      // Get ID token from Google response
       const idToken = credentialResponse.credential;
+      console.log('🔐 Google authentication successful, verifying with backend...');
       
-      // Send to backend
-      console.log('📤 Sending to backend:', { idToken, userType });
-      const response = await authService.googleLogin(idToken, userType);
+      // Step 1: Check if user exists (send without userType)
+      const response = await authService.googleLogin(idToken, null);
       
-      console.log('📥 Backend response:', response);
+      console.log('📦 Backend Response:', response);
+      console.log('📦 Response Data:', response.data);
       
-      // Handle response format: { isSuccess, data, message }
-      const data = response.data || response;
+      // Backend returns: { isSuccess, message, data, errors, statusCode }
+      const { isSuccess, data, statusCode, message } = response;
       
-      // Update auth store directly (don't use login function)
-      useAuthStore.setState({
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        isAuthenticated: true,
-        loading: false,
-      });
+      // Convert statusCode to number (backend might send as string)
+      const statusNum = typeof statusCode === 'string' ? parseInt(statusCode, 10) : statusCode;
       
-      toast.success('تم تسجيل الدخول بنجاح!');
+      console.log('✅ Parsed Status Code:', statusNum, '(type:', typeof statusNum, ')');
       
-      // Navigate based on user role
-      navigate('/doctor/dashboard');
+      // Success - User exists or created
+      if (isSuccess && data) {
+        console.log('✅ Authentication successful');
+        console.log('Status Code:', statusNum);
+        console.log('User Data:', data.user);
+        
+        // Check if user has a role assigned
+        const userRole = data.user?.role;
+        console.log('User Role (raw):', userRole);
+        console.log('User Role type:', typeof userRole);
+        
+        // Valid roles
+        const validRoles = ['Patient', 'Doctor', 'Pharmacy', 'Laboratory'];
+        const isValidRole = userRole && validRoles.includes(userRole);
+        
+        console.log('Is Valid Role?', isValidRole);
+        
+        // If no role or invalid role, redirect to user type selection
+        if (!userRole || userRole === 'null' || userRole === null || userRole === '' || !isValidRole) {
+          console.log('⚠️ User has no valid role assigned, redirecting to user type selection...');
+          console.log('Reason: role =', userRole, '| isValidRole =', isValidRole);
+          const idToken = credentialResponse.credential;
+          navigate('/select-user-type', { 
+            state: { googleToken: idToken },
+            replace: true 
+          });
+          return;
+        }
+        
+        if (statusNum === 200) {
+          console.log('✅ Existing user logged in with role:', userRole);
+        } else if (statusNum === 201) {
+          console.log('✅ New user created with role:', userRole);
+        }
+        
+        handleSuccessfulAuth(data);
+        return;
+      }
+      
+      // If we get here, something unexpected happened
+      throw new Error(message || 'Unexpected response from backend');
       
     } catch (error) {
-      console.error('❌ Google login failed:', error);
-      console.error('📋 Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
+      const status = error.response?.status;
+      const backendResponse = error.response?.data;
       
-      const errorMessage = error.response?.data?.message || 'فشل تسجيل الدخول باستخدام جوجل';
+      console.log('❌ Error caught!');
+      console.log('Error Status:', status);
+      console.log('Error Response:', backendResponse);
+      console.log('Full Error:', error);
+      
+      // User not found (404) - redirect to user type selection
+      if (status === 404) {
+        console.log('🎯 New user detected (404), redirecting to user type selection...');
+        const idToken = credentialResponse.credential;
+        navigate('/select-user-type', { 
+          state: { googleToken: idToken },
+          replace: true 
+        });
+        return;
+      }
+      
+      // Check if backend returned isSuccess: false (but didn't throw 404)
+      if (backendResponse?.isSuccess === false || backendResponse?.isSuccess === 'false') {
+        console.log('⚠️ Backend returned isSuccess: false');
+        console.log('Message:', backendResponse?.message);
+        
+        // Check if message indicates user not found
+        const msg = (backendResponse?.message || '').toLowerCase();
+        if (msg.includes('not found') || msg.includes('لم يتم العثور') || msg.includes('select user type')) {
+          console.log('🎯 User not found (via message), redirecting to selection...');
+          const idToken = credentialResponse.credential;
+          navigate('/select-user-type', { 
+            state: { googleToken: idToken },
+            replace: true 
+          });
+          return;
+        }
+      }
+      
+      // Real error - show message
+      console.error('❌ Google authentication failed:', error);
+      const errorMessage = backendResponse?.message || error.message || 'فشل المصادقة باستخدام جوجل';
       toast.error(errorMessage);
+      
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Handle successful authentication (user exists or created)
+   * @param {Object} data - User data and tokens from backend
+   */
+  const handleSuccessfulAuth = (data) => {
+    // Update auth store
+    useAuthStore.setState({
+      user: data.user,
+      accessToken: data.accessToken,
+      refreshToken: data.refreshToken,
+      isAuthenticated: true,
+      loading: false,
+    });
+    
+    toast.success('تم تسجيل الدخول بنجاح!');
+    
+    // Navigate based on user role
+    const role = data.user.role?.toLowerCase();
+    const dashboardRoutes = {
+      patient: '/patient/search',
+      doctor: '/doctor/dashboard',
+      pharmacy: '/pharmacy/dashboard',
+      laboratory: '/lab/dashboard',
+    };
+    
+    navigate(dashboardRoutes[role] || '/');
   };
 
   /**

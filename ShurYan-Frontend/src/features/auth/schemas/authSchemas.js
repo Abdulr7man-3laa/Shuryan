@@ -49,6 +49,60 @@ export const registerDoctorSchema = registerPatientSchema.shape({
     .required('التخصص الطبي مطلوب'),
 });
 
+// Register Pharmacy Schema
+export const registerPharmacySchema = yup.object().shape({
+  entityName: yup
+    .string()
+    .min(3, 'اسم الصيدلية يجب أن يكون 3 أحرف على الأقل')
+    .required('اسم الصيدلية مطلوب'),
+  email: yup
+    .string()
+    .email('البريد الإلكتروني غير صحيح')
+    .required('البريد الإلكتروني مطلوب'),
+  password: yup
+    .string()
+    .min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'كلمة المرور يجب أن تحتوي على حرف كبير وصغير ورقم'
+    )
+    .required('كلمة المرور مطلوبة'),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref('password')], 'كلمات المرور غير متطابقة')
+    .required('تأكيد كلمة المرور مطلوب'),
+  terms: yup
+    .boolean()
+    .oneOf([true], 'يجب الموافقة على الشروط'),
+});
+
+// Register Laboratory Schema
+export const registerLaboratorySchema = yup.object().shape({
+  entityName: yup
+    .string()
+    .min(3, 'اسم المعمل يجب أن يكون 3 أحرف على الأقل')
+    .required('اسم المعمل مطلوب'),
+  email: yup
+    .string()
+    .email('البريد الإلكتروني غير صحيح')
+    .required('البريد الإلكتروني مطلوب'),
+  password: yup
+    .string()
+    .min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'كلمة المرور يجب أن تحتوي على حرف كبير وصغير ورقم'
+    )
+    .required('كلمة المرور مطلوبة'),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref('password')], 'كلمات المرور غير متطابقة')
+    .required('تأكيد كلمة المرور مطلوب'),
+  terms: yup
+    .boolean()
+    .oneOf([true], 'يجب الموافقة على الشروط'),
+});
+
 // Forgot Password Schema
 export const forgotPasswordSchema = yup.object().shape({
   email: yup

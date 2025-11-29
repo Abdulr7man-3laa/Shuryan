@@ -398,8 +398,18 @@ namespace Shuryan.Infrastructure.Data.Migrations
                     b.Property<Guid>("LaboratoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<decimal>("SampleCollectionDeliveryCost")
                         .ValueGeneratedOnAdd()
@@ -411,6 +421,9 @@ namespace Shuryan.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(1);
+
+                    b.Property<DateTime?>("SamplesCollectedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
                         .ValueGeneratedOnAdd()
@@ -2455,7 +2468,6 @@ namespace Shuryan.Infrastructure.Data.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("VerificationType")
-                        .HasMaxLength(50)
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("VerifiedAt")

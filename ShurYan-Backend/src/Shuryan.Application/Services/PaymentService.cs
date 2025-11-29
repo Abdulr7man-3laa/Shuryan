@@ -432,7 +432,7 @@ namespace Shuryan.Application.Services
                         var pharmacyOrder = await _unitOfWork.PharmacyOrders.GetByIdAsync(orderId);
                         if (pharmacyOrder != null && pharmacyOrder.Status == PharmacyOrderStatus.PendingPayment)
                         {
-                            pharmacyOrder.Status = PharmacyOrderStatus.PaidPendingPharmacyConfirmation;
+                            pharmacyOrder.Status = PharmacyOrderStatus.Confirmed;
                             pharmacyOrder.UpdatedAt = DateTime.UtcNow;
                             _unitOfWork.PharmacyOrders.Update(pharmacyOrder);
                             await _unitOfWork.SaveChangesAsync();
@@ -441,9 +441,10 @@ namespace Shuryan.Application.Services
 
                     case "LabOrder":
                         var labOrder = await _unitOfWork.LabOrders.GetByIdAsync(orderId);
-                        if (labOrder != null && labOrder.Status == Core.Enums.Laboratory.LabOrderStatus.PendingPayment)
+                        if (labOrder != null && labOrder.Status == Core.Enums.Laboratory.LabOrderStatus.AwaitingPayment)
                         {
-                            labOrder.Status = Core.Enums.Laboratory.LabOrderStatus.PaidPendingLabConfirmation;
+                            labOrder.Status = Core.Enums.Laboratory.LabOrderStatus.Paid;
+                            labOrder.PaidAt = DateTime.UtcNow;
                             labOrder.UpdatedAt = DateTime.UtcNow;
                             _unitOfWork.LabOrders.Update(labOrder);
                             await _unitOfWork.SaveChangesAsync();

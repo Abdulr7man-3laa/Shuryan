@@ -84,15 +84,22 @@ export const useAuthStore = create(
             }
           }
           
-          // Last resort: check if email contains patient/doctor
+          // Last resort: check if email contains patient/doctor/pharmacy/laboratory
           if (!user.role && user.email) {
             // This is a temporary fallback - remove in production
-            if (user.email.toLowerCase().includes('patient')) {
+            const emailLower = user.email.toLowerCase();
+            if (emailLower.includes('patient')) {
               user.role = 'patient';
               console.log('⚠️ FALLBACK: Detected patient from email');
-            } else if (user.email.toLowerCase().includes('doctor')) {
+            } else if (emailLower.includes('doctor')) {
               user.role = 'doctor';
               console.log('⚠️ FALLBACK: Detected doctor from email');
+            } else if (emailLower.includes('pharmacy')) {
+              user.role = 'pharmacy';
+              console.log('⚠️ FALLBACK: Detected pharmacy from email');
+            } else if (emailLower.includes('laboratory') || emailLower.includes('lab')) {
+              user.role = 'laboratory';
+              console.log('⚠️ FALLBACK: Detected laboratory from email');
             }
           }
           
@@ -107,9 +114,17 @@ export const useAuthStore = create(
             console.log('✅ Normalized profileImage → profileImageUrl:', user.profileImageUrl);
           }
           
+          // ✅ DEFENSIVE CHECK: If backend doesn't return isEmailVerified, assume true
+          // (because successful login means email is verified)
+          if (user && user.isEmailVerified === undefined) {
+            user.isEmailVerified = true;
+            console.log('⚠️ Backend did not return isEmailVerified, assuming TRUE after successful login');
+          }
+          
           console.log('💾 Storing user:', user);
           console.log('💾 Final user.role:', user?.role);
           console.log('🖼️ Profile Image URL:', user?.profileImageUrl);
+          console.log('📧 Email Verified:', user?.isEmailVerified);
           console.log('🔍 All user properties:', Object.keys(user || {}));
           
           set({
@@ -122,7 +137,22 @@ export const useAuthStore = create(
           return data;
         } catch (error) {
           const errorMessage = error.response?.data?.message || 'فشل تسجيل الدخول';
-          set({ error: errorMessage, loading: false });
+          
+          // Check if it's an email verification error
+          const isEmailNotVerified = errorMessage.toLowerCase().includes('email not verified') ||
+                                     errorMessage.toLowerCase().includes('not verified') ||
+                                     errorMessage.toLowerCase().includes('البريد الإلكتروني غير مفعل');
+          
+          console.log('❌ Login Error:', errorMessage);
+          console.log('📧 Is Email Verification Error?', isEmailNotVerified);
+          
+          // Don't set error in store if it's email verification (will be handled by redirect)
+          if (!isEmailNotVerified) {
+            set({ error: errorMessage, loading: false });
+          } else {
+            set({ loading: false }); // Only set loading to false, no error
+          }
+          
           throw new Error(errorMessage);
         }
       },
@@ -174,15 +204,26 @@ export const useAuthStore = create(
         try {
           const data = await authService.verifyEmail(email, otpCode);
           
+          console.log('📧 Verify Email Response:', data);
+          
           // Extract user from nested data structure
           const user = data.data?.user || data.user;
           const accessToken = data.data?.accessToken || data.accessToken;
           const refreshToken = data.data?.refreshToken || data.refreshToken;
           
+          console.log('👤 User from API:', user);
+          console.log('🔑 User Role (raw):', user?.role);
+          
           // Normalize user object - convert roles array to single role
           if (user && user.roles && Array.isArray(user.roles)) {
-            user.role = user.roles[0];
+            user.role = user.roles[0]?.toLowerCase();
             console.log('✅ Normalized role from array:', user.roles, '→', user.role);
+          }
+          
+          // Check if role exists but not lowercase
+          if (user?.role && typeof user.role === 'string') {
+            user.role = user.role.toLowerCase();
+            console.log('✅ Converted role to lowercase:', user.role);
           }
           
           // Normalize profile image field name
@@ -190,6 +231,16 @@ export const useAuthStore = create(
             user.profileImageUrl = user.profileImage;
             console.log('✅ Normalized profileImage → profileImageUrl:', user.profileImageUrl);
           }
+          
+          // ✅ CRITICAL FIX: Mark email as verified after successful verification
+          if (user) {
+            user.isEmailVerified = true;
+            console.log('✅ Email verified flag set to TRUE');
+          }
+          
+          console.log('💾 Final user object:', user);
+          console.log('💾 Final role:', user?.role);
+          console.log('📧 Email Verified:', user?.isEmailVerified);
           
           set({
             user: user,

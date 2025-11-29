@@ -104,14 +104,14 @@ export const useBookingStore = create(
         let serviceDetails = null;
         if (serviceType === 'regular' && services?.regularCheckup) {
           serviceDetails = {
-            type: 0, // ConsultationType enum
+            type: 1, // ✅ Regular = 1 (Backend Enum)
             name: 'كشف جديد',
             price: services.regularCheckup.price,
             duration: services.regularCheckup.duration,
           };
         } else if (serviceType === 'reExam' && services?.reExamination) {
           serviceDetails = {
-            type: 1,
+            type: 2, // ✅ FollowUp = 2 (Backend Enum)
             name: 'كشف متابعة',
             price: services.reExamination.price,
             duration: services.reExamination.duration,

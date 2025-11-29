@@ -161,13 +161,21 @@ export const useAllAppointments = () => {
     }
   };
 
+  /**
+   * Refresh appointments - always from page 1 to avoid stale state
+   */
+  const refreshCurrentPage = () => {
+    console.log('🔄 Refreshing all appointments - from page 1');
+    return fetchAppointments(1, 12);
+  };
+
   return {
     appointments,
     loading,
     error,
     pagination,
     statistics, // ✅ Return statistics
-    refreshAppointments: fetchAppointments,
+    refreshAppointments: refreshCurrentPage,
     goToNextPage,
     goToPreviousPage,
     goToPage,

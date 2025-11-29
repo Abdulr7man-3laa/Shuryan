@@ -1,15 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-// import reviewsService from '../../../api/services/reviews.service'; // TODO: Uncomment when API is ready
-
-// 🗑️ TEMPORARY: Remove when connecting to real API
-import { 
-  mockReviews, 
-  mockStatistics, 
-  createMockPaginationResponse,
-  filterReviewsByRating,
-  sortReviews
-} from '../data/mockReviews';
+import doctorService from '../../../api/services/doctor.service';
 
 /**
  * Reviews Store - Zustand
@@ -59,10 +50,9 @@ const useReviewsStore = create(
       
       /**
        * Fetch reviews with current filters and pagination
-       * 🗑️ TEMPORARY: Using mock data - Replace with real API when ready
        */
       fetchReviews: async () => {
-        const { filters, pagination } = get();
+        const { pagination } = get();
         
         set((state) => ({
           loading: { ...state.loading, reviews: true },
@@ -70,53 +60,18 @@ const useReviewsStore = create(
         }));
 
         try {
-          // 🗑️ MOCK DATA SIMULATION - Remove when API is ready
-          await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+          console.log('📥 Fetching reviews:', { pageNumber: pagination.pageNumber, pageSize: pagination.pageSize });
           
-          // Apply filters
-          let filteredReviews = [...mockReviews];
-          if (filters.minRating) {
-            filteredReviews = filterReviewsByRating(filteredReviews, filters.minRating);
-          }
+          const response = await doctorService.getReviews(pagination.pageNumber, pagination.pageSize);
           
-          // Apply sorting
-          filteredReviews = sortReviews(filteredReviews, filters.sortBy, filters.sortOrder);
-          
-          // Apply pagination
-          const response = createMockPaginationResponse(
-            filteredReviews, 
-            pagination.pageNumber, 
-            pagination.pageSize
-          );
-          
-          set({
-            reviews: response.reviews || [],
-            pagination: {
-              pageNumber: response.pageNumber || 1,
-              pageSize: response.pageSize || 20,
-              totalCount: response.totalCount || 0,
-              totalPages: response.totalPages || 0,
-              hasNextPage: response.hasNextPage || false,
-              hasPreviousPage: response.hasPreviousPage || false
-            },
-            loading: { ...get().loading, reviews: false }
-          });
-
-          /* TODO: Replace with real API call when ready
-          const params = {
-            pageNumber: pagination.pageNumber,
-            pageSize: pagination.pageSize,
-            ...filters
-          };
-
-          const response = await reviewsService.getDoctorReviews(params);
+          console.log('✅ Reviews fetched:', response);
           
           if (response) {
             set({
-              reviews: response.reviews || [],
+              reviews: response.data || [],
               pagination: {
                 pageNumber: response.pageNumber || 1,
-                pageSize: response.pageSize || 20,
+                pageSize: response.pageSize || 10,
                 totalCount: response.totalCount || 0,
                 totalPages: response.totalPages || 0,
                 hasNextPage: response.hasNextPage || false,
@@ -125,8 +80,8 @@ const useReviewsStore = create(
               loading: { ...get().loading, reviews: false }
             });
           }
-          */
         } catch (error) {
+          console.error('❌ Error fetching reviews:', error);
           set((state) => ({
             loading: { ...state.loading, reviews: false },
             error: { ...state.error, reviews: error.message || 'فشل في جلب التقييمات' }
@@ -136,7 +91,6 @@ const useReviewsStore = create(
 
       /**
        * Fetch review statistics
-       * 🗑️ TEMPORARY: Using mock data - Replace with real API when ready
        */
       fetchStatistics: async () => {
         set((state) => ({
@@ -145,23 +99,18 @@ const useReviewsStore = create(
         }));
 
         try {
-          // 🗑️ MOCK DATA SIMULATION - Remove when API is ready
-          await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API delay
+          console.log('📊 Fetching review statistics...');
           
-          set({
-            statistics: mockStatistics,
-            loading: { ...get().loading, statistics: false }
-          });
-
-          /* TODO: Replace with real API call when ready
-          const statistics = await reviewsService.getReviewStatistics();
+          const statistics = await doctorService.getReviewStatistics();
+          
+          console.log('✅ Statistics fetched:', statistics);
           
           set({
             statistics,
             loading: { ...get().loading, statistics: false }
           });
-          */
         } catch (error) {
+          console.error('❌ Error fetching statistics:', error);
           set((state) => ({
             loading: { ...state.loading, statistics: false },
             error: { ...state.error, statistics: error.message || 'فشل في جلب الإحصائيات' }
@@ -170,16 +119,12 @@ const useReviewsStore = create(
       },
 
       /**
-       * Set filter and refresh reviews
+       * Set minimum rating filter (client-side filtering)
        */
-      setFilter: (filterKey, value) => {
+      setMinRatingFilter: (minRating) => {
         set((state) => ({
-          filters: { ...state.filters, [filterKey]: value },
-          pagination: { ...state.pagination, pageNumber: 1 } // Reset to first page
+          filters: { ...state.filters, minRating }
         }));
-        
-        // Auto-fetch with new filters
-        get().fetchReviews();
       },
 
       /**
@@ -192,11 +137,8 @@ const useReviewsStore = create(
             verifiedOnly: false,
             sortBy: 'date',
             sortOrder: 'desc'
-          },
-          pagination: { ...get().pagination, pageNumber: 1 }
+          }
         });
-        
-        get().fetchReviews();
       },
 
       /**
@@ -226,59 +168,32 @@ const useReviewsStore = create(
       },
 
       /**
-       * Reply to a review
-       * 🗑️ TEMPORARY: Using mock simulation - Replace with real API when ready
+       * Fetch review details by ID
        */
-      replyToReview: async (reviewId, reply) => {
+      fetchReviewDetails: async (reviewId) => {
         set((state) => ({
           loading: { ...state.loading, reply: true },
           error: { ...state.error, reply: null }
         }));
 
         try {
-          // 🗑️ MOCK DATA SIMULATION - Remove when API is ready
-          await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API delay
+          console.log('📄 Fetching review details:', reviewId);
           
-          // Update the review in the list
-          set((state) => ({
-            reviews: state.reviews.map(review => 
-              review.id === reviewId 
-                ? { 
-                    ...review, 
-                    doctorReply: reply, 
-                    doctorRepliedAt: new Date().toISOString() 
-                  }
-                : review
-            ),
-            loading: { ...state.loading, reply: false }
-          }));
+          const reviewDetails = await doctorService.getReviewDetails(reviewId);
           
-          console.log('✅ Mock reply sent successfully:', { reviewId, reply });
-          return { success: true };
-
-          /* TODO: Replace with real API call when ready
-          await reviewsService.replyToReview(reviewId, reply);
+          console.log('✅ Review details fetched:', reviewDetails);
           
-          // Update the review in the list
-          set((state) => ({
-            reviews: state.reviews.map(review => 
-              review.id === reviewId 
-                ? { 
-                    ...review, 
-                    doctorReply: reply, 
-                    doctorRepliedAt: new Date().toISOString() 
-                  }
-                : review
-            ),
-            loading: { ...state.loading, reply: false }
-          }));
+          set({
+            selectedReview: reviewDetails,
+            loading: { ...get().loading, reply: false }
+          });
           
-          return { success: true };
-          */
+          return { success: true, data: reviewDetails };
         } catch (error) {
+          console.error('❌ Error fetching review details:', error);
           set((state) => ({
             loading: { ...state.loading, reply: false },
-            error: { ...state.error, reply: error.message || 'فشل في إرسال الرد' }
+            error: { ...state.error, reply: error.message || 'فشل في جلب تفاصيل التقييم' }
           }));
           
           return { success: false, error: error.message };

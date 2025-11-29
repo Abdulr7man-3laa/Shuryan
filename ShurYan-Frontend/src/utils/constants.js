@@ -32,7 +32,7 @@ export const ROUTES = {
   // Root & Common
   HOME: '/',
   UNAUTHORIZED: '/unauthorized',
-  
+
   // Auth Routes
   LOGIN: '/login',
   REGISTER: '/register',
@@ -40,7 +40,7 @@ export const ROUTES = {
   FORGOT_PASSWORD: '/forgot-password',
   VERIFY_RESET_OTP: '/verify-reset-otp',
   RESET_PASSWORD: '/reset-password',
-  
+
   // Doctor Routes
   DOCTOR: {
     BASE: '/doctor',
@@ -51,7 +51,7 @@ export const ROUTES = {
     REVIEWS: '/doctor/reviews',
     SESSION: (appointmentId) => `/doctor/session/${appointmentId}`,
   },
-  
+
   // Patient Routes
   PATIENT: {
     BASE: '/patient',
@@ -61,7 +61,7 @@ export const ROUTES = {
     LAB_RESULTS: '/patient/lab-results',
     PROFILE: '/patient/profile',
   },
-  
+
   // Pharmacy Routes
   PHARMACY: {
     BASE: '/pharmacy',
@@ -69,7 +69,7 @@ export const ROUTES = {
     ORDERS: '/pharmacy/orders',
     PROFILE: '/pharmacy/profile',
   },
-  
+
   // Verifier Routes
   VERIFIER: {
     BASE: '/verifier',
@@ -184,12 +184,12 @@ export const GOOGLE_CONFIG = {
     'profile',
     'email',
   ].join(' '),
-  
+
   // Helper methods
   isConfigured() {
     return Boolean(this.CLIENT_ID?.trim());
   },
-  
+
   getRedirectUri() {
     // Runtime fallback only when needed
     return this.REDIRECT_URI || (typeof window !== 'undefined' ? window.location.origin : '');
@@ -205,44 +205,45 @@ export const isGoogleConfigured = () => {
 // Medical Specialties
 // ==========================================
 
+// Medical Specialties - Matching Backend Enum (MedicalSpecialty)
 export const SPECIALTIES = [
-  { id: 1, name: 'طب عام', nameEn: 'General Practice' },
-  { id: 2, name: 'طب باطني', nameEn: 'Internal Medicine' },
-  { id: 3, name: 'جراحة عامة', nameEn: 'General Surgery' },
-  { id: 4, name: 'طب أطفال', nameEn: 'Pediatrics' },
-  { id: 5, name: 'نساء وتوليد', nameEn: 'Obstetrics & Gynecology' },
-  { id: 6, name: 'عظام', nameEn: 'Orthopedics' },
-  { id: 7, name: 'قلب', nameEn: 'Cardiology' },
-  { id: 8, name: 'جلدية', nameEn: 'Dermatology' },
-  { id: 9, name: 'عيون', nameEn: 'Ophthalmology' },
-  { id: 10, name: 'أنف وأذن وحنجرة', nameEn: 'ENT' },
-  { id: 11, name: 'أسنان', nameEn: 'Dentistry' },
-  { id: 12, name: 'نفسية', nameEn: 'Psychiatry' },
-  { id: 13, name: 'مخ وأعصاب', nameEn: 'Neurology' },
-  { id: 14, name: 'كلى', nameEn: 'Nephrology' },
-  { id: 15, name: 'مسالك بولية', nameEn: 'Urology' },
-  { id: 16, name: 'أورام', nameEn: 'Oncology' },
-  { id: 17, name: 'صدر وجهاز تنفسي', nameEn: 'Pulmonology' },
-  { id: 18, name: 'جهاز هضمي', nameEn: 'Gastroenterology' },
-  { id: 19, name: 'غدد صماء', nameEn: 'Endocrinology' },
-  { id: 20, name: 'روماتيزم', nameEn: 'Rheumatology' },
-  { id: 21, name: 'أمراض دم', nameEn: 'Hematology' },
-  { id: 22, name: 'تخدير', nameEn: 'Anesthesiology' },
-  { id: 23, name: 'أشعة', nameEn: 'Radiology' },
-  { id: 24, name: 'تحاليل طبية', nameEn: 'Pathology' },
-  { id: 25, name: 'طب طوارئ', nameEn: 'Emergency Medicine' },
+  { value: 1, label: 'طب عام', nameEn: 'General Medicine' },
+  { value: 2, label: 'طب الأطفال', nameEn: 'Pediatrics' },
+  { value: 3, label: 'أمراض النساء والتوليد', nameEn: 'Obstetrics & Gynecology' },
+  { value: 4, label: 'جراحة عامة', nameEn: 'General Surgery' },
+  { value: 5, label: 'طب القلب', nameEn: 'Cardiology' },
+  { value: 6, label: 'طب الأعصاب', nameEn: 'Neurology' },
+  { value: 7, label: 'طب العظام', nameEn: 'Orthopedics' },
+  { value: 8, label: 'طب الجلدية', nameEn: 'Dermatology' },
+  { value: 9, label: 'طب العيون', nameEn: 'Ophthalmology' },
+  { value: 10, label: 'أنف وأذن وحنجرة', nameEn: 'ENT' },
+  { value: 11, label: 'طب نفسي', nameEn: 'Psychiatry' },
+  { value: 12, label: 'طب المسالك البولية', nameEn: 'Urology' },
+  { value: 13, label: 'طب الصدر', nameEn: 'Pulmonology' },
+  { value: 14, label: 'طب الكلى', nameEn: 'Nephrology' },
+  { value: 15, label: 'طب الجهاز الهضمي', nameEn: 'Gastroenterology' },
+  { value: 16, label: 'طب الغدد الصماء', nameEn: 'Endocrinology' },
+  { value: 17, label: 'طب الأورام', nameEn: 'Oncology' },
+  { value: 18, label: 'طب الأشعة', nameEn: 'Radiology' },
+  { value: 19, label: 'طب التخدير', nameEn: 'Anesthesiology' },
+  { value: 20, label: 'طب الطوارئ', nameEn: 'Emergency Medicine' },
 ];
 
+// Helper functions for specialties
 export const getSpecialtyById = (id) => {
-  return SPECIALTIES.find(specialty => specialty.id === id) || null;
+  return SPECIALTIES.find(specialty => specialty.value === id) || null;
+};
+
+export const getSpecialtyByValue = (value) => {
+  return SPECIALTIES.find(specialty => specialty.value === value) || null;
 };
 
 export const getSpecialtyByName = (name) => {
-  return SPECIALTIES.find(specialty => specialty.name === name) || null;
+  return SPECIALTIES.find(specialty => specialty.label === name || specialty.nameEn === name) || null;
 };
 
 export const getSpecialtyNames = () => {
-  return SPECIALTIES.map(specialty => specialty.name);
+  return SPECIALTIES.map(specialty => specialty.label);
 };
 
 // ==========================================
@@ -261,7 +262,7 @@ export const GENDER_OPTIONS = [
 
 export const mapGenderToArabic = (genderName) => {
   if (!genderName) return '';
-  
+
   if (genderName === 'Male' || genderName === GENDER.MALE.nameEn) {
     return GENDER.MALE.nameAr;
   }
@@ -274,13 +275,13 @@ export const mapGenderToArabic = (genderName) => {
   if (genderName === GENDER.FEMALE.nameAr) {
     return GENDER.FEMALE.nameAr;
   }
-  
+
   return genderName;
 };
 
 export const mapGenderToNumber = (genderName) => {
   if (!genderName) return null;
-  
+
   if (
     genderName === 'Male' ||
     genderName === GENDER.MALE.nameAr ||
@@ -288,7 +289,7 @@ export const mapGenderToNumber = (genderName) => {
   ) {
     return GENDER.MALE.id;
   }
-  
+
   if (
     genderName === 'Female' ||
     genderName === GENDER.FEMALE.nameAr ||
@@ -296,7 +297,7 @@ export const mapGenderToNumber = (genderName) => {
   ) {
     return GENDER.FEMALE.id;
   }
-  
+
   return null;
 };
 
@@ -311,7 +312,7 @@ export const DOCUMENT_TYPES = {
   SYNDICATE_MEMBERSHIP_CARD: 2,
   MEDICAL_GRADUATION_CERTIFICATE: 3,
   SPECIALTY_CERTIFICATE: 4,
-  
+
   // Optional Documents (5-8)
   ADDITIONAL_CERTIFICATES: 5,
   AWARDS_AND_RECOGNITIONS: 6,
@@ -352,14 +353,14 @@ export const getDocumentTypeFromFieldName = (fieldName) => {
     specializationCertificate: DOCUMENT_TYPES.SPECIALTY_CERTIFICATE,
     specializationCertificatePhoto: DOCUMENT_TYPES.SPECIALTY_CERTIFICATE,
   };
-  
+
   const documentType = mapping[fieldName];
-  
+
   if (documentType === undefined) {
     console.error(`Unknown field name: ${fieldName}. Available fields:`, Object.keys(mapping));
     throw new Error(`نوع المستند غير معروف: ${fieldName}`);
   }
-  
+
   return documentType;
 };
 
@@ -463,24 +464,24 @@ export const GOVERNORATES = [
   { id: 7, name: 'الفيوم', nameEn: 'Fayoum' },
   { id: 8, name: 'الغربية', nameEn: 'Gharbia' },
   { id: 9, name: 'الإسماعيلية', nameEn: 'Ismailia' },
-  { id: 10, name: 'المنوفية', nameEn: 'Monufia' },
+  { id: 10, name: 'المنوفية', nameEn: 'Menofia' },
   { id: 11, name: 'المنيا', nameEn: 'Minya' },
-  { id: 12, name: 'القليوبية', nameEn: 'Qalyubia' },
+  { id: 12, name: 'القليوبية', nameEn: 'Qaliubiya' },
   { id: 13, name: 'الوادي الجديد', nameEn: 'New Valley' },
-  { id: 14, name: 'السويس', nameEn: 'Suez' },
-  { id: 15, name: 'أسوان', nameEn: 'Aswan' },
-  { id: 16, name: 'أسيوط', nameEn: 'Asyut' },
-  { id: 17, name: 'بني سويف', nameEn: 'Beni Suef' },
-  { id: 18, name: 'بورسعيد', nameEn: 'Port Said' },
-  { id: 19, name: 'دمياط', nameEn: 'Damietta' },
-  { id: 20, name: 'الشرقية', nameEn: 'Sharqia' },
-  { id: 21, name: 'جنوب سيناء', nameEn: 'South Sinai' },
-  { id: 22, name: 'كفر الشيخ', nameEn: 'Kafr El Sheikh' },
-  { id: 23, name: 'مطروح', nameEn: 'Matrouh' },
-  { id: 24, name: 'الأقصر', nameEn: 'Luxor' },
-  { id: 25, name: 'قنا', nameEn: 'Qena' },
-  { id: 26, name: 'شمال سيناء', nameEn: 'North Sinai' },
-  { id: 27, name: 'سوهاج', nameEn: 'Sohag' },
+  { id: 14, name: 'شمال سيناء', nameEn: 'North Sinai' },
+  { id: 15, name: 'بورسعيد', nameEn: 'Port Said' },
+  { id: 16, name: 'قنا', nameEn: 'Qena' },
+  { id: 17, name: 'الشرقية', nameEn: 'Sharqia' },
+  { id: 18, name: 'سوهاج', nameEn: 'Sohag' },
+  { id: 19, name: 'جنوب سيناء', nameEn: 'South Sinai' },
+  { id: 20, name: 'السويس', nameEn: 'Suez' },
+  { id: 21, name: 'أسوان', nameEn: 'Aswan' },
+  { id: 22, name: 'أسيوط', nameEn: 'Assiut' },
+  { id: 23, name: 'بني سويف', nameEn: 'Beni Suef' },
+  { id: 24, name: 'دمياط', nameEn: 'Damietta' },
+  { id: 25, name: 'كفر الشيخ', nameEn: 'Kafr El Sheikh' },
+  { id: 26, name: 'الأقصر', nameEn: 'Luxor' },
+  { id: 27, name: 'مرسى مطروح', nameEn: 'Matrouh' },
 ];
 
 // Helper functions for governorates

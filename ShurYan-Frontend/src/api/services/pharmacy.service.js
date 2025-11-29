@@ -46,7 +46,7 @@ export const updateBasicInfo = async (data) => {
 export const updateProfileImage = async (imageFile) => {
   try {
     console.log('📸 Uploading pharmacy profile image...');
-    
+
     const formData = new FormData();
     formData.append('profileImage', imageFile);
 
@@ -123,7 +123,7 @@ export const updateWorkingHours = async (data) => {
     console.log('🕐 Updating pharmacy working hours:', data);
     const response = await apiClient.put('/pharmacies/me/profile/workinghours', data);
     console.log('✅ Working hours updated successfully:', response.data);
-    
+
     // API returns { success, message, data, statusCode }
     // data contains the weeklySchedule object
     return response.data?.data || data.weeklySchedule || data;
@@ -166,10 +166,79 @@ export const updateDeliverySettings = async (data) => {
   }
 };
 
-// ==================== 5. Orders & Prescriptions ====================
+// ==================== 5. Statistics ====================
 
 /**
- * Get pharmacy orders with pagination
+ * Get pharmacy statistics
+ * GET /api/pharmacies/me/statistics
+ * @returns {Promise<Object>} Statistics data
+ */
+export const getStatistics = async () => {
+  try {
+    console.log('📊 Fetching pharmacy statistics...');
+    const response = await apiClient.get('/pharmacies/me/statistics');
+    console.log('✅ Pharmacy statistics fetched:', response.data?.data);
+    return response.data?.data || null;
+  } catch (error) {
+    console.error('❌ Error fetching pharmacy statistics:', error);
+    throw error;
+  }
+};
+
+// ==================== 6. Orders & Prescriptions ====================
+
+/**
+ * Get pharmacy orders list with pagination
+ * GET /api/pharmacies/me/orders/list?pageNumber=1&pageSize=20
+ * @param {number} pageNumber - Page number (default: 1)
+ * @param {number} pageSize - Page size (default: 20)
+ * @returns {Promise<Object>} Orders list with pagination info
+ */
+export const getOrdersList = async (pageNumber = 1, pageSize = 20) => {
+  try {
+    console.log(`📋 Fetching pharmacy orders list - Page: ${pageNumber}, Size: ${pageSize}`);
+
+    const url = `/pharmacies/me/orders/list?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+    const response = await apiClient.get(url);
+    console.log('✅ Pharmacy orders list fetched:', response.data);
+
+    // Extract data from the response
+    const responseData = response.data?.data;
+
+    return {
+      orders: responseData?.orders || [],
+      totalCount: responseData?.totalCount || 0,
+      pageNumber: responseData?.pageNumber || 1,
+      pageSize: responseData?.pageSize || 20,
+    };
+  } catch (error) {
+    console.error('❌ Error fetching pharmacy orders list:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get pharmacy order details by ID
+ * GET /api/pharmacies/me/orders/{orderId}
+ * @param {string} orderId - Order ID
+ * @returns {Promise<Object>} Order details
+ */
+export const getOrderDetails = async (orderId) => {
+  try {
+    console.log(`📋 Fetching order details for: ${orderId}`);
+
+    const response = await apiClient.get(`/pharmacies/me/orders/${orderId}`);
+    console.log('✅ Order details fetched:', response.data);
+
+    return response.data?.data || null;
+  } catch (error) {
+    console.error('❌ Error fetching order details:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get pharmacy orders with pagination (LEGACY - kept for backward compatibility)
  * GET /api/pharmacies/me/orders?pageNumber=1&pageSize=10
  * @param {number} pageNumber - Page number (default: 1)
  * @param {number} pageSize - Page size (default: 10)
@@ -179,19 +248,19 @@ export const updateDeliverySettings = async (data) => {
 export const getOrders = async (pageNumber = 1, pageSize = 10, status = null) => {
   try {
     console.log(`📋 Fetching pharmacy orders - Page: ${pageNumber}, Size: ${pageSize}`);
-    
+
     let url = `/pharmacies/me/orders?PageNumber=${pageNumber}&PageSize=${pageSize}`;
     if (status) {
       url += `&status=${status}`;
     }
-    
+
     const response = await apiClient.get(url);
     console.log('✅ Pharmacy orders fetched:', response.data);
-    
+
     // Extract data from the nested structure
     const responseData = response.data?.data;
     const orders = responseData?.data || []; // The actual orders array is in data.data
-    
+
     return {
       orders: orders,
       totalCount: responseData?.totalCount || 0,
@@ -211,6 +280,45 @@ export const getOrders = async (pageNumber = 1, pageSize = 10, status = null) =>
 };
 
 /**
+ * Update pharmacy order status
+ * PUT /api/pharmacies/me/orders/{orderId}/status
+ * @param {string} orderId - Order ID
+ * @param {number} newStatus - New status value (6=InProgress, 7=OutForDelivery, 8=ReadyForPickup, 9=Delivered)
+ * @returns {Promise<Object>} Update result
+ */
+export const updateOrderStatus = async (orderId, newStatusOrPayload, extra = {}) => {
+  try {
+    // Build request body: support number (backward compatible) or full payload
+    const body = typeof newStatusOrPayload === 'number'
+      ? { newStatus: newStatusOrPayload, ...extra }
+      : { ...newStatusOrPayload };
+
+    console.log(`🔄 Updating order status for ${orderId}...`, body);
+
+    const response = await apiClient.put(`/pharmacies/me/orders/${orderId}/status`, body);
+
+    console.log('✅ Order status updated successfully:', response.data);
+
+    return {
+      success: true,
+      data: response.data?.data || response.data,
+      message: response.data?.message || 'تم تحديث حالة الطلب بنجاح'
+    };
+  } catch (error) {
+    console.error('❌ Error updating order status:', error);
+    console.error('❌ Error response:', error.response?.data);
+
+    return {
+      success: false,
+      error: error.response?.data?.message ||
+        error.response?.data?.errors?.[0] ||
+        error.message ||
+        'فشل في تحديث حالة الطلب'
+    };
+  }
+};
+
+/**
  * Respond to pharmacy order with medication availability and pricing
  * POST /api/pharmacies/me/orders/{orderId}/respond
  * @param {string} orderId - Order ID
@@ -221,11 +329,11 @@ export const respondToOrder = async (orderId, responseData) => {
   try {
     console.log(`📋 Responding to order ${orderId}...`);
     console.log('📋 Request payload:', JSON.stringify(responseData, null, 2));
-    
+
     const response = await apiClient.post(`/pharmacies/me/orders/${orderId}/respond`, responseData);
-    
+
     console.log('✅ Order response sent successfully:', response.data);
-    
+
     // Return standardized response
     return {
       success: true,
@@ -236,14 +344,14 @@ export const respondToOrder = async (orderId, responseData) => {
     console.error('❌ Error responding to order:', error);
     console.error('❌ Error response:', error.response?.data);
     console.error('❌ Error status:', error.response?.status);
-    
+
     // Return standardized error response
     return {
       success: false,
-      error: error.response?.data?.message || 
-             error.response?.data?.errors?.[0] || 
-             error.message || 
-             'فشل في إرسال الرد على الطلب'
+      error: error.response?.data?.message ||
+        error.response?.data?.errors?.[0] ||
+        error.message ||
+        'فشل في إرسال الرد على الطلب'
     };
   }
 };
@@ -288,21 +396,27 @@ const pharmacyService = {
   getBasicInfo,
   updateBasicInfo,
   updateProfileImage,
-  
+
   // Address
   getAddress,
   updateAddress,
-  
+
   // Working Hours
   getWorkingHours,
   updateWorkingHours,
-  
+
   // Delivery
   getDeliverySettings,
   updateDeliverySettings,
-  
+
+  // Statistics
+  getStatistics,
+
   // Orders & Prescriptions
   getOrders,
+  getOrdersList,
+  getOrderDetails,
+  updateOrderStatus,
   getPendingPrescriptions,
   getPrescriptionDetails,
   respondToOrder,

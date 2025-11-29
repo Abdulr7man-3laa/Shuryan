@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FaCheckCircle,
   FaCalendarAlt,
@@ -9,13 +9,39 @@ import {
   FaCreditCard,
   FaDownload,
   FaWhatsapp,
+  FaExclamationTriangle,
 } from 'react-icons/fa';
+import PaymentModal from '../payment/PaymentModal';
+import { usePaymentStore } from '../../stores/paymentStore';
 
 /**
  * BookingSuccess - Step 6: Booking confirmed and paid successfully
  */
 const BookingSuccess = ({ bookingResult, onClose, onDownload }) => {
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const { openPaymentModal } = usePaymentStore();
+
   if (!bookingResult) return null;
+
+  // Check if payment is required (status is not paid)
+  // If paymentStatus is undefined/null, assume payment is required
+  const isPaymentRequired = !bookingResult.paymentStatus || bookingResult.paymentStatus !== 2; // 2 = Completed
+  
+  console.log('💳 [BookingSuccess] Payment check:', {
+    bookingId: bookingResult.id,
+    paymentStatus: bookingResult.paymentStatus,
+    isPaymentRequired,
+    totalAmount: bookingResult.totalAmount
+  });
+
+  const handlePayNow = () => {
+    openPaymentModal(
+      'appointment',
+      bookingResult.id,
+      bookingResult.totalAmount
+    );
+    setIsPaymentModalOpen(true);
+  };
 
   // Format date to Arabic
   const formatDateArabic = (dateStr) => {
@@ -144,43 +170,82 @@ const BookingSuccess = ({ bookingResult, onClose, onDownload }) => {
           </div>
 
           {/* Payment Status */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-lg p-2">
-                  <FaCheckCircle className="text-green-600 text-xl" />
+          {isPaymentRequired ? (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-amber-100 rounded-lg p-2">
+                    <FaExclamationTriangle className="text-amber-600 text-xl" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-amber-700 font-semibold">حالة الدفع</p>
+                    <p className="text-lg font-bold text-amber-900">
+                      في انتظار الدفع
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-green-700 font-semibold">حالة الدفع</p>
-                  <p className="text-lg font-bold text-green-900">
-                    تم الدفع بنجاح
-                  </p>
+                <div className="bg-amber-600 text-white px-3 py-1.5 rounded-full text-xs font-bold">
+                  {bookingResult.totalAmount} جنيه
                 </div>
-              </div>
-              <div className="bg-green-600 text-white px-3 py-1.5 rounded-full text-xs font-bold">
-                {bookingResult.totalAmount} جنيه
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-100 rounded-lg p-2">
+                    <FaCheckCircle className="text-green-600 text-xl" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-green-700 font-semibold">حالة الدفع</p>
+                    <p className="text-lg font-bold text-green-900">
+                      تم الدفع بنجاح
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-green-600 text-white px-3 py-1.5 rounded-full text-xs font-bold">
+                  {bookingResult.totalAmount} جنيه
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Important Notice */}
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="bg-blue-100 rounded-lg p-2 mt-0.5">
-            <FaCalendarAlt className="text-blue-600" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-blue-800 font-bold mb-1">
-              📌 ملاحظات هامة
-            </p>
-            <p className="text-xs text-blue-700 leading-relaxed">
-              يرجى الحضور قبل الموعد بـ 15 دقيقة. في حالة التأخير، يمكنك إلغاء أو تعديل الموعد قبل 24 ساعة على الأقل.
-            </p>
+      {isPaymentRequired ? (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="bg-amber-100 rounded-lg p-2 mt-0.5">
+              <FaExclamationTriangle className="text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-amber-800 font-bold mb-1">
+                ⚠️ تنبيه هام
+              </p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                يرجى إتمام الدفع خلال 30 دقيقة للحفاظ على الموعد. في حالة عدم الدفع، سيتم إلغاء الحجز تلقائياً.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="bg-blue-100 rounded-lg p-2 mt-0.5">
+              <FaCalendarAlt className="text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-blue-800 font-bold mb-1">
+                📌 ملاحظات هامة
+              </p>
+              <p className="text-xs text-blue-700 leading-relaxed">
+                يرجى الحضور قبل الموعد بـ 15 دقيقة. في حالة التأخير، يمكنك إلغاء أو تعديل الموعد قبل 24 ساعة على الأقل.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3">
@@ -208,19 +273,46 @@ const BookingSuccess = ({ bookingResult, onClose, onDownload }) => {
         </button>
       </div>
 
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className="
-          w-full py-5 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 
-          text-white text-lg font-black hover:shadow-2xl hover:scale-105
-          transition-all duration-200
-          flex items-center justify-center gap-3
-        "
-      >
-        <FaCheckCircle className="text-2xl" />
-        <span>تم - إغلاق</span>
-      </button>
+      {/* Action Buttons */}
+      {isPaymentRequired ? (
+        <div className="space-y-3">
+          <button
+            onClick={handlePayNow}
+            className="
+              w-full py-5 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 
+              text-white text-lg font-black hover:shadow-2xl hover:scale-105
+              transition-all duration-200
+              flex items-center justify-center gap-3
+            "
+          >
+            <FaCreditCard className="text-2xl" />
+            <span>إتمام الدفع الآن</span>
+          </button>
+          <button
+            onClick={onClose}
+            className="
+              w-full py-4 rounded-xl border-2 border-slate-300 
+              text-slate-700 text-base font-bold hover:bg-slate-50
+              transition-all duration-200
+            "
+          >
+            الدفع لاحقاً
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={onClose}
+          className="
+            w-full py-5 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 
+            text-white text-lg font-black hover:shadow-2xl hover:scale-105
+            transition-all duration-200
+            flex items-center justify-center gap-3
+          "
+        >
+          <FaCheckCircle className="text-2xl" />
+          <span>تم - إغلاق</span>
+        </button>
+      )}
 
       {/* Footer Note */}
       <div className="bg-slate-50 rounded-xl p-4 text-center">
@@ -233,6 +325,32 @@ const BookingSuccess = ({ bookingResult, onClose, onDownload }) => {
           </span>
         </p>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        orderType="appointment"
+        orderId={bookingResult.id}
+        amount={bookingResult.totalAmount}
+        orderDetails={{
+          title: 'موعد استشارة طبية',
+          items: [
+            {
+              label: 'نوع الاستشارة',
+              value: bookingResult.consultationType === 0 ? 'كشف جديد' : 'كشف متابعة',
+            },
+            {
+              label: 'التاريخ',
+              value: formatDateArabic(bookingResult.appointmentDate),
+            },
+            {
+              label: 'الوقت',
+              value: formatTime12h(bookingResult.appointmentTime),
+            },
+          ],
+        }}
+      />
     </div>
   );
 };

@@ -1,20 +1,6 @@
 import apiClient from '../client';
 
-/**
- * Chat API Service - Refactored
- * يتعامل مع 3 endpoints فقط:
- * 1. SendMessage - إرسال رسالة
- * 2. ChatHistory - جلب تاريخ المحادثة مع pagination
- * 3. ClearChat - مسح المحادثة
- */
 const chatService = {
-  /**
-   * إرسال رسالة للـ AI Bot
-   * @param {Object} data - بيانات الرسالة
-   * @param {string} data.message - الرسالة من المستخدم
-   * @param {Object} data.context - Context إضافي (currentPage, doctorId, appointmentId, specialty, etc.)
-   * @returns {Promise<Object>} رد الـ AI Bot
-   */
   async sendMessage(data) {
     try {
       console.log('📤 [SendMessage] Sending message to AI Bot:', data);
@@ -26,7 +12,6 @@ const chatService = {
 
       console.log('✅ [SendMessage] AI Bot response:', response.data);
       
-      // استخراج data من wrapper
       return response.data?.data || null;
     } catch (error) {
       console.error('❌ [SendMessage] Error:', error);
@@ -34,12 +19,7 @@ const chatService = {
     }
   },
 
-  /**
-   * جلب تاريخ المحادثة مع pagination
-   * @param {number} pageNumber - رقم الصفحة (default: 1)
-   * @param {number} pageSize - عدد الرسائل في الصفحة (default: 50)
-   * @returns {Promise<Object>} بيانات المحادثة مع pagination
-   */
+
   async getChatHistory(pageNumber = 1, pageSize = 50) {
     try {
       console.log(`📥 [ChatHistory] Fetching page ${pageNumber} (size: ${pageSize})`);
@@ -50,7 +30,6 @@ const chatService = {
       
       console.log('✅ [ChatHistory] Data received:', response.data);
       
-      // استخراج data من wrapper
       return response.data?.data || null;
     } catch (error) {
       console.error('❌ [ChatHistory] Error:', error);
@@ -58,10 +37,7 @@ const chatService = {
     }
   },
 
-  /**
-   * مسح المحادثة بالكامل (البدء من جديد)
-   * @returns {Promise<Object>} رسالة النجاح
-   */
+
   async clearChat() {
     try {
       console.log('🧹 [ClearChat] Clearing entire chat history');

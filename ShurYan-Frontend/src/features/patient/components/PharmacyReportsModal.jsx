@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FaTimes, FaEye, FaShoppingCart, FaPhoneAlt, FaMapMarkerAlt, 
-  FaHashtag, FaClock, FaTimesCircle, FaFileAlt, FaCheckCircle, 
-  FaExclamationTriangle 
+import {
+  FaTimes, FaEye, FaShoppingCart, FaPhoneAlt, FaMapMarkerAlt,
+  FaHashtag, FaClock, FaTimesCircle, FaFileAlt, FaCheckCircle,
+  FaExclamationTriangle
 } from 'react-icons/fa';
 import patientService from '@/api/services/patient.service';
 import PharmacyPaymentModal from './PharmacyPaymentModal';
@@ -11,7 +11,7 @@ import PharmacyPaymentModal from './PharmacyPaymentModal';
  * PharmacyReportsModal Component
  * Display pharmacy reports for a prescription order
  */
-const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
+const PharmacyReportsModal = ({ isOpen, onClose, prescription, onNewOrder }) => {
   const [reports, setReports] = useState([]);
   const [prescriptionData, setPrescriptionData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -26,13 +26,13 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
     const fetchPharmacyReports = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         console.log('📋 Fetching pharmacy reports for prescription:', prescription.id);
         console.log('📋 Full prescription object:', prescription);
-        
+
         const response = await patientService.getPharmacyReports(prescription.id);
-        
+
         console.log('✅ Raw API response:', response);
         console.log('✅ Response structure check:', {
           hasData: !!response,
@@ -41,10 +41,10 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
           pharmacyResponsesLength: response?.pharmacyResponses?.length || 0,
           responseKeys: response ? Object.keys(response) : []
         });
-        
+
         if (response && response.prescriptionId) {
           console.log('✅ Valid prescription pharmacy response found');
-          
+
           // Log the actual structure of pharmacyResponses
           console.log('🔍 Raw pharmacyResponses:', response.pharmacyResponses);
           if (response.pharmacyResponses && response.pharmacyResponses.length > 0) {
@@ -52,32 +52,32 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
             console.log('🔍 Available medications in first response:', response.pharmacyResponses[0]?.availableMedications);
             console.log('🔍 Alternative medications in first response:', response.pharmacyResponses[0]?.alternativeMedications);
           }
-          
+
           // Convert API response to our expected format
           const convertedReports = response.pharmacyResponses?.map((pharmacyResponse, index) => {
             console.log(`🔍 Processing pharmacy response ${index + 1}:`, pharmacyResponse);
             console.log(`🔍 All keys in pharmacy response ${index + 1}:`, Object.keys(pharmacyResponse));
-            
+
             // Try different possible field names for medications
             const possibleMedicationFields = [
-              'availableMedications', 'medications', 'medicationResponses', 
+              'availableMedications', 'medications', 'medicationResponses',
               'items', 'drugs', 'prescriptionItems', 'responseItems'
             ];
-            
+
             let availableMeds = [];
             let alternativeMeds = [];
             let unavailableMeds = [];
-            
+
             // Check each possible field
             possibleMedicationFields.forEach(field => {
               if (pharmacyResponse[field]) {
                 console.log(`🔍 Found ${field}:`, pharmacyResponse[field]);
-                
+
                 if (Array.isArray(pharmacyResponse[field])) {
                   // If it's an array, try to categorize by status
                   pharmacyResponse[field].forEach(med => {
                     console.log(`🔍 Medication item:`, med);
-                    
+
                     if (med.status === 'available' || med.isAvailable === true || med.available === true) {
                       availableMeds.push(med);
                     } else if (med.status === 'alternative' || med.isAlternative === true || med.alternative === true) {
@@ -96,7 +96,7 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
                 }
               }
             });
-            
+
             // Fallback: use direct fields if they exist
             if (pharmacyResponse.availableMedications && Array.isArray(pharmacyResponse.availableMedications)) {
               availableMeds = pharmacyResponse.availableMedications;
@@ -107,13 +107,13 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
             if (pharmacyResponse.unavailableMedications && Array.isArray(pharmacyResponse.unavailableMedications)) {
               unavailableMeds = pharmacyResponse.unavailableMedications;
             }
-            
+
             console.log(`🔍 Final medication counts for pharmacy ${index + 1}:`, {
               available: availableMeds.length,
               alternative: alternativeMeds.length,
               unavailable: unavailableMeds.length
             });
-            
+
             return {
               orderId: pharmacyResponse.orderId,
               pharmacyId: pharmacyResponse.pharmacyId,
@@ -131,14 +131,14 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
               status: pharmacyResponse.status || 'responded'
             };
           }) || [];
-          
+
           console.log('📋 Converted reports array:', convertedReports);
           console.log('📋 First report medications check:', {
             available: convertedReports[0]?.availableMedications?.length || 0,
             alternative: convertedReports[0]?.alternativeMedications?.length || 0,
             unavailable: convertedReports[0]?.unavailableMedications?.length || 0
           });
-          
+
           setReports(convertedReports);
           setPrescriptionData({
             prescriptionId: response.prescriptionId,
@@ -149,7 +149,7 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
           console.log('⚠️ No valid pharmacy response data found');
           setError('لا توجد تقارير متاحة لهذه الروشتة');
         }
-        
+
       } catch (err) {
         console.error('❌ Error fetching pharmacy reports:', err);
         setError('حدث خطأ في تحميل تقارير الصيدليات');
@@ -165,7 +165,7 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
 
   const handleViewReport = (report) => {
     console.log('📋 Viewing detailed report for pharmacy:', report.pharmacyName);
-    
+
     // Use the report data directly since it already contains all the details from the API
     setSelectedReport(report);
     setIsReportDetailsOpen(true);
@@ -180,19 +180,19 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
   const handlePaymentConfirm = async (paymentData) => {
     try {
       console.log('💳 Payment confirmed:', paymentData);
-      
+
       // Here you would call the API to confirm the order
       // await patientService.confirmPharmacyOrder(orderToConfirm.orderId, paymentData);
-      
+
       // Close modals and show success
       setIsPaymentModalOpen(false);
       setOrderToConfirm(null);
-      
+
       alert(`تم تأكيد الطلب من ${orderToConfirm.pharmacyName} بنجاح! سيتم التواصل معك قريباً.`);
-      
+
       // Optionally close the reports modal
       onClose();
-      
+
     } catch (error) {
       console.error('❌ Order confirmation failed:', error);
       alert('حدث خطأ في تأكيد الطلب. يرجى المحاولة مرة أخرى.');
@@ -231,12 +231,31 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription }) => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors"
-              >
-                <FaTimes className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    // Close this modal first
+                    onClose();
+                    // Call the onNewOrder callback if provided
+                    if (onNewOrder) {
+                      onNewOrder(prescription);
+                    } else {
+                      // Fallback: navigate to prescriptions page
+                      window.location.href = '/patient/prescriptions';
+                    }
+                  }}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl flex items-center gap-2 transition-colors font-bold text-sm"
+                >
+                  <FaShoppingCart className="w-4 h-4" />
+                  <span>طلب جديد</span>
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -473,7 +492,7 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onOrderNow }) => {
                           {med.medicationName || med.name || med.drugName || med.itemName || 'دواء غير محدد'}
                         </h4>
                         <p className="text-sm text-slate-600">
-                          {(med.dosage || med.dose || med.strength || '')} 
+                          {(med.dosage || med.dose || med.strength || '')}
                           {(med.dosage || med.dose || med.strength) && (med.form || med.type || med.unit) && ' • '}
                           {(med.form || med.type || med.unit || '')}
                         </p>
@@ -509,7 +528,7 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onOrderNow }) => {
                           {med.medicationName || med.name || med.drugName || med.itemName || 'دواء غير محدد'}
                         </h4>
                         <p className="text-sm text-slate-600">
-                          {(med.dosage || med.dose || med.strength || '')} 
+                          {(med.dosage || med.dose || med.strength || '')}
                           {(med.dosage || med.dose || med.strength) && (med.form || med.type || med.unit) && ' • '}
                           {(med.form || med.type || med.unit || '')}
                         </p>
@@ -548,7 +567,7 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onOrderNow }) => {
                           {med.medicationName || med.name || med.drugName || med.itemName || 'دواء غير محدد'}
                         </h4>
                         <p className="text-sm text-slate-600">
-                          {(med.dosage || med.dose || med.strength || '')} 
+                          {(med.dosage || med.dose || med.strength || '')}
                           {(med.dosage || med.dose || med.strength) && (med.form || med.type || med.unit) && ' • '}
                           {(med.form || med.type || med.unit || '')}
                         </p>
