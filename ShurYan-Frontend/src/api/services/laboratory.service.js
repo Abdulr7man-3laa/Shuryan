@@ -1,14 +1,5 @@
 import apiClient from '../client';
 
-/**
- * Laboratory Service
- * Handles all laboratory-related API calls
- */
-
-/**
- * Get laboratory statistics
- * @returns {Promise<Object>}
- */
 export const getStatistics = async () => {
   try {
     const response = await apiClient.get('/Laboratories/me/statistics');
@@ -19,15 +10,6 @@ export const getStatistics = async () => {
   }
 };
 
-/**
- * Get laboratory orders (detailed - for dashboard)
- * GET /Laboratories/me/orders
- * @param {Object} params - Query parameters
- * @param {number} params.status - Order status filter (optional)
- * @param {number} params.pageNumber - Page number
- * @param {number} params.pageSize - Page size
- * @returns {Promise<Array>} Array of orders
- */
 export const getOrders = async (params = {}) => {
   try {
     console.log('🔍 Fetching laboratory orders with params:', params);
@@ -44,12 +26,6 @@ export const getOrders = async (params = {}) => {
   }
 };
 
-/**
- * Get laboratory orders list (lightweight - for orders page)
- * @param {number} pageNumber - Page number
- * @param {number} pageSize - Page size
- * @returns {Promise<Object>}
- */
 export const getOrdersList = async (pageNumber = 1, pageSize = 20) => {
   try {
     const response = await apiClient.get('/Laboratories/me/orders/list', {
@@ -70,12 +46,6 @@ export const getOrdersList = async (pageNumber = 1, pageSize = 20) => {
   }
 };
 
-/**
- * Get order details by ID
- * GET /Laboratories/me/orders/{orderId}
- * @param {string} orderId - Order ID
- * @returns {Promise<Object>} Order details object
- */
 export const getOrderDetails = async (orderId) => {
   try {
     console.log(`🔍 Fetching order details for: ${orderId}`);
@@ -92,12 +62,6 @@ export const getOrderDetails = async (orderId) => {
   }
 };
 
-/**
- * Respond to order with test availability and pricing
- * @param {string} orderId - Order ID
- * @param {Object} responseData - Response data
- * @returns {Promise<Object>}
- */
 export const respondToOrder = async (orderId, responseData) => {
   try {
     const response = await apiClient.put(`/Laboratories/me/orders/${orderId}/respond`, responseData);
@@ -108,28 +72,24 @@ export const respondToOrder = async (orderId, responseData) => {
   }
 };
 
-/**
- * Update order status
- * @param {string} orderId - Order ID
- * @param {number} status - New status
- * @returns {Promise<Object>}
- */
-export const updateOrderStatus = async (orderId, status) => {
+export const startWork = async (orderId) => {
   try {
-    const response = await apiClient.put(`/Laboratories/me/orders/${orderId}/status`, { status });
+    console.log('▶️ [Laboratory Service] Starting work on order:', orderId);
+
+    const response = await apiClient.post(`/Laboratories/me/lab-orders/${orderId}/start-work`);
+    
+    console.log('✅ [Laboratory Service] Work started successfully:', response.data);
+    
     return { success: true, data: response.data?.data || response.data };
   } catch (error) {
-    console.error(`Error updating order status for ${orderId}:`, error);
-    return { success: false, error: error.response?.data?.message || 'فشل في تحديث حالة الطلب' };
+    console.error(`❌ [Laboratory Service] Error starting work on order ${orderId}:`, error);
+    console.error('Error details:', error.response?.data);
+    return { success: false, error: error.response?.data?.message || 'فشل في بدء العمل على الطلب' };
   }
 };
 
 // ==================== PROFILE MANAGEMENT ====================
 
-/**
- * Get laboratory basic info
- * GET /api/laboratories/me/profile/basic
- */
 export const getBasicInfo = async () => {
   try {
     const response = await apiClient.get('/laboratories/me/profile/basic');
@@ -140,11 +100,6 @@ export const getBasicInfo = async () => {
   }
 };
 
-/**
- * Update laboratory basic info
- * PUT /api/laboratories/me/profile/basic
- * @param {Object} data - { name?, phoneNumber? }
- */
 export const updateBasicInfo = async (data) => {
   try {
     console.log('📝 Updating laboratory basic info:', data);
@@ -157,11 +112,6 @@ export const updateBasicInfo = async (data) => {
   }
 };
 
-/**
- * Update laboratory profile image
- * PUT /api/laboratories/me/profile/image
- * @param {File} imageFile - Image file (max 5MB)
- */
 export const updateProfileImage = async (imageFile) => {
   try {
     console.log('📸 Uploading laboratory profile image...');
@@ -183,10 +133,6 @@ export const updateProfileImage = async (imageFile) => {
   }
 };
 
-/**
- * Get laboratory address
- * GET /api/laboratories/me/profile/address
- */
 export const getAddress = async () => {
   try {
     const response = await apiClient.get('/laboratories/me/profile/address');
@@ -197,11 +143,6 @@ export const getAddress = async () => {
   }
 };
 
-/**
- * Update laboratory address
- * PUT /api/laboratories/me/profile/address
- * @param {Object} data - { governorate?, city?, street?, buildingNumber?, latitude?, longitude? }
- */
 export const updateAddress = async (data) => {
   try {
     console.log('📍 Updating laboratory address:', data);
@@ -214,10 +155,6 @@ export const updateAddress = async (data) => {
   }
 };
 
-/**
- * Get laboratory working hours
- * GET /api/laboratories/me/profile/workinghours
- */
 export const getWorkingHours = async () => {
   try {
     const response = await apiClient.get('/laboratories/me/profile/workinghours');
@@ -228,11 +165,6 @@ export const getWorkingHours = async () => {
   }
 };
 
-/**
- * Update laboratory working hours
- * PUT /api/laboratories/me/profile/workinghours
- * @param {Object} data - { weeklySchedule: {...} }
- */
 export const updateWorkingHours = async (data) => {
   try {
     console.log('🕐 Updating laboratory working hours:', data);
@@ -245,10 +177,6 @@ export const updateWorkingHours = async (data) => {
   }
 };
 
-/**
- * Get laboratory sample collection settings
- * GET /api/laboratories/me/profile/home-collection
- */
 export const getSampleCollectionSettings = async () => {
   try {
     const response = await apiClient.get('/laboratories/me/home-collection');
@@ -259,11 +187,6 @@ export const getSampleCollectionSettings = async () => {
   }
 };
 
-/**
- * Update laboratory sample collection settings
- * PUT /api/laboratories/me/profile/home-collection
- * @param {Object} data - { offersHomeSampleCollection?: boolean, homeSampleCollectionFee?: number }
- */
 export const updateSampleCollectionSettings = async (data) => {
   try {
     console.log('🩸 Updating laboratory sample collection settings:', data);
@@ -278,11 +201,6 @@ export const updateSampleCollectionSettings = async (data) => {
 
 // ==================== SERVICES MANAGEMENT ====================
 
-/**
- * Get laboratory services
- * GET /api/laboratories/me/services
- * @returns {Promise<Array>} Array of laboratory services
- */
 export const getServices = async () => {
   try {
     console.log('🔬 Fetching laboratory services...');
@@ -296,12 +214,6 @@ export const getServices = async () => {
   }
 };
 
-/**
- * Create a new laboratory service
- * POST /api/laboratories/me/services
- * @param {Object} serviceData - { labTestId, price, isAvailable, labSpecificNotes }
- * @returns {Promise<Object>} Created service object
- */
 export const createService = async (serviceData) => {
   try {
     console.log('➕ Creating new laboratory service:', serviceData);
@@ -315,13 +227,6 @@ export const createService = async (serviceData) => {
   }
 };
 
-/**
- * Update laboratory service price and notes
- * PUT /api/laboratories/me/services/{serviceId}
- * @param {string} serviceId - Service ID
- * @param {Object} updateData - { price, labSpecificNotes }
- * @returns {Promise<Object>} Updated service object
- */
 export const updateService = async (serviceId, updateData) => {
   try {
     console.log(`📝 Updating service ${serviceId}:`, updateData);
@@ -335,12 +240,6 @@ export const updateService = async (serviceId, updateData) => {
   }
 };
 
-/**
- * Delete laboratory service
- * DELETE /api/laboratories/me/services/{serviceId}
- * @param {string} serviceId - Service ID
- * @returns {Promise<Object>} Deletion response
- */
 export const deleteService = async (serviceId) => {
   try {
     console.log(`🗑️ Deleting service ${serviceId}...`);
@@ -353,13 +252,6 @@ export const deleteService = async (serviceId) => {
   }
 };
 
-/**
- * Update laboratory service availability
- * PUT /api/laboratories/me/services/{serviceId}/availability
- * @param {string} serviceId - Service ID
- * @param {boolean} isAvailable - Service availability status
- * @returns {Promise<Object>} Updated service object
- */
 export const updateServiceAvailability = async (serviceId, isAvailable) => {
   try {
     console.log(`🔄 Updating service ${serviceId} availability to: ${isAvailable}`);
@@ -373,11 +265,6 @@ export const updateServiceAvailability = async (serviceId, isAvailable) => {
   }
 };
 
-/**
- * Get all available lab tests in the system
- * GET /api/laboratories/me/available-tests
- * @returns {Promise<Array>} Array of available lab tests
- */
 export const getAvailableTests = async () => {
   try {
     console.log('🔬 Fetching available lab tests...');
@@ -397,7 +284,7 @@ const laboratoryService = {
   getOrdersList,
   getOrderDetails,
   respondToOrder,
-  updateOrderStatus,
+  startWork,
   // Profile management
   getBasicInfo,
   updateBasicInfo,

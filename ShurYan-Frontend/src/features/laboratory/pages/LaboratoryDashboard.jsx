@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FaFlask,
   FaCheckCircle,
@@ -6,16 +6,12 @@ import {
   FaChartLine,
   FaMoneyBillWave,
   FaCalendarAlt,
-  FaMicroscope,
-  FaChevronDown,
-  FaBox,
-  FaTruck,
-  FaCheck
+  FaMicroscope
 } from 'react-icons/fa';
 import useLabStatsStore from '../stores/labStatsStore';
 import useLabOrders from '../hooks/useLabOrders';
 import { formatDate } from '../../../utils/helpers';
-import { updateOrderStatus as updateOrderStatusAPI, getOrderDetails } from '../../../api/services/laboratory.service';
+import { startWork, getOrderDetails } from '../../../api/services/laboratory.service';
 import OrderDetailsModal from '../components/OrderDetailsModal';
 import { LAB_ORDER_STATUS, LAB_STATUS_CONFIG } from '../constants/labConstants';
 
@@ -95,71 +91,40 @@ const LaboratoryDashboard = () => {
     },
   ] : [];
 
-  // Dropdown state
-  const [openDropdownId, setOpenDropdownId] = useState(null);
-  const dropdownRef = useRef(null);
-
   // Order details modal state
   const [isOrderDetailsModalOpen, setIsOrderDetailsModalOpen] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [loadingOrderDetails, setLoadingOrderDetails] = useState(false);
 
-  // Status options for dropdown
-  // Status options for dropdown
-  const statusOptions = [
-    { value: LAB_ORDER_STATUS.AWAITING_SAMPLES, label: 'في انتظار العينات', icon: FaBox, color: 'text-purple-600', bgColor: 'bg-purple-50' },
-    { value: LAB_ORDER_STATUS.IN_PROGRESS_AT_LAB, label: 'قيد التنفيذ في المعمل', icon: FaMicroscope, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
-    { value: LAB_ORDER_STATUS.RESULTS_READY, label: 'النتائج جاهزة', icon: FaCheck, color: 'text-teal-600', bgColor: 'bg-teal-50' },
-    { value: LAB_ORDER_STATUS.COMPLETED, label: 'تم الاستلام', icon: FaCheckCircle, color: 'text-green-600', bgColor: 'bg-green-50' },
-  ];
 
-  // Handle status update
-  const handleStatusUpdate = async (orderId, newStatus) => {
-    console.log('🔄 Updating order status:', orderId, newStatus);
+  // Handle start work (status 6 -> 7)
+  const handleStartWork = async (orderId) => {
+    console.log('▶️ Starting work on order:', orderId);
 
     // Optimistic update
     const prevOrder = orders.find(o => o.orderId === orderId);
     const prevStatus = prevOrder?.laboratoryOrderStatus;
-    updateOrderStatusLocal(orderId, newStatus);
-    setOpenDropdownId(null);
+    updateOrderStatusLocal(orderId, LAB_ORDER_STATUS.IN_PROGRESS_AT_LAB);
 
     try {
-      const result = await updateOrderStatusAPI(orderId, newStatus);
+      const result = await startWork(orderId);
       if (result.success) {
-        console.log('✅ Status updated successfully');
-        // No refresh needed; UI already updated optimistically
+        console.log('✅ Work started successfully');
+        // Refresh to get latest data
+        await refreshOrders();
       } else {
         // Rollback on failure
         updateOrderStatusLocal(orderId, prevStatus);
-        console.error('❌ Failed to update status:', result.error);
-        alert(result.error || 'فشل في تحديث حالة الطلب');
+        console.error('❌ Failed to start work:', result.error);
+        alert(result.error || 'فشل في بدء العمل على الطلب');
       }
     } catch (error) {
       // Rollback on error
       updateOrderStatusLocal(orderId, prevStatus);
-      console.error('❌ Error updating status:', error);
-      alert('حدث خطأ أثناء تحديث حالة الطلب');
+      console.error('❌ Error starting work:', error);
+      alert('حدث خطأ أثناء بدء العمل على الطلب');
     }
   };
-
-  // Toggle dropdown
-  const toggleDropdown = (orderId) => {
-    setOpenDropdownId(openDropdownId === orderId ? null : orderId);
-  };
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpenDropdownId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   // Handle viewing order details
   const handleViewOrderDetails = async (orderId) => {
@@ -300,8 +265,6 @@ const LaboratoryDashboard = () => {
                 <tbody>
                   {orders.map((order) => {
                     const statusConfig = getStatusConfig(order.status);
-                    // Check if status update is disabled (status 1, 2 or 9)
-                    const isStatusUpdateDisabled = order.status === LAB_ORDER_STATUS.NEW_REQUEST || order.status === LAB_ORDER_STATUS.AWAITING_LAB_REVIEW || order.status === LAB_ORDER_STATUS.COMPLETED;
 
                     return (
                       <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
@@ -317,64 +280,45 @@ const LaboratoryDashboard = () => {
                           <span className="text-sm font-medium text-slate-700">{order.laboratoryName || 'غير محدد'}</span>
                         </td>
                         <td className="py-4 px-4 text-center">
-                          {isStatusUpdateDisabled ? (
-                            <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor}`}>
-                              {statusConfig.label}
-                            </span>
-                          ) : (
-                            <div className="relative inline-block" ref={openDropdownId === order.id ? dropdownRef : null}>
-                              <button
-                                onClick={() => toggleDropdown(order.id)}
-                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border ${statusConfig.borderColor} ${statusConfig.bgColor} ${statusConfig.color} transition-all duration-200 hover:shadow-sm`}
-                              >
-                                <span>{statusConfig.label}</span>
-                                <FaChevronDown className={`text-xs transition-transform duration-200 ${openDropdownId === order.id ? 'rotate-180' : ''}`} />
-                              </button>
-
-                              {/* Status Update Dropdown */}
-                              {openDropdownId === order.id && (
-                                <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border-2 border-slate-100 z-50 overflow-hidden animate-fadeIn">
-                                  {statusOptions.map((option) => {
-                                    const Icon = option.icon;
-                                    return (
-                                      <button
-                                        key={option.value}
-                                        onClick={() => handleStatusUpdate(order.id, option.value)}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-right border-b border-slate-100 last:border-b-0`}
-                                      >
-                                        <div className={`w-8 h-8 ${option.bgColor} rounded-lg flex items-center justify-center`}>
-                                          <Icon className={`text-sm ${option.color}`} />
-                                        </div>
-                                        <span className="text-sm font-semibold text-slate-700">{option.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor}`}>
+                            {statusConfig.label}
+                          </span>
                         </td>
                         <td className="py-4 px-4">
                           <span className="text-sm text-slate-600">{formatDate(order.createdAt, 'DD/MM/YYYY HH:mm')}</span>
                         </td>
                         <td className="py-4 px-4 text-center">
-                          <button
-                            onClick={() => handleViewOrderDetails(order.id)}
-                            disabled={loadingOrderDetails}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#00b19f] hover:bg-[#00a08d] text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {loadingOrderDetails ? (
-                              <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                <span>جاري التحميل...</span>
-                              </>
-                            ) : (
-                              <>
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Start Work Button - Only show for status 6 (AWAITING_SAMPLES) */}
+                            {order.status === LAB_ORDER_STATUS.AWAITING_SAMPLES && (
+                              <button
+                                onClick={() => handleStartWork(order.id)}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              >
                                 <FaMicroscope className="text-base" />
-                                <span>عرض التفاصيل</span>
-                              </>
+                                <span>بدء العمل</span>
+                              </button>
                             )}
-                          </button>
+                            
+                            {/* View Details Button */}
+                            <button
+                              onClick={() => handleViewOrderDetails(order.id)}
+                              disabled={loadingOrderDetails}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-[#00b19f] hover:bg-[#00a08d] text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {loadingOrderDetails ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                  <span>جاري التحميل...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FaMicroscope className="text-base" />
+                                  <span>عرض التفاصيل</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes, FaUser, FaSignOutAlt } from 'react-icons/fa';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { LABORATORY_NAV_ITEMS } from '../constants/navigation';
+import CircleLogo from '@/assets/CircleLogoPNG.png';
+import ArLogoWord from '@/assets/ArLogoWord.png';
 
 /**
  * Laboratory Dashboard Navbar Component
@@ -52,23 +54,15 @@ const LaboratoryNavbar = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo Section */}
           <div className="flex items-center">
-            <Link to="/laboratory/dashboard" className="flex items-center space-x-reverse space-x-3 group">
-              <div className="relative w-12 h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105" style={{
-                background: 'linear-gradient(to bottom right, #00b19f, #00d4be)'
-              }}>
-                <span className="text-white text-2xl font-black">ش</span>
-                <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-2xl font-black transition-all duration-300" style={{
-                  background: 'linear-gradient(to right, #00b19f, #00d4be)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
-                }}>
-                  شُريان
-                </h1>
-                <p className="text-xs text-slate-500 font-semibold group-hover:text-slate-600 transition-colors duration-300">لوحة تحكم المعمل</p>
+            <Link to="/laboratory/dashboard" className="flex items-center group">
+              {/* Arabic Logo Text - Full Height */}
+              <div className="hidden sm:block h-16 py-2">
+                <img 
+                  src={ArLogoWord} 
+                  alt="شُريان - منصة الرعاية الصحية الذكية" 
+                  className="h-full w-auto object-contain transition-all duration-300 group-hover:scale-105"
+                  style={{ minWidth: '140px' }}
+                />
               </div>
             </Link>
           </div>

@@ -159,7 +159,7 @@ const GoogleLoginButton = ({ userType = 'patient' }) => { // eslint-disable-line
       patient: '/patient/search',
       doctor: '/doctor/dashboard',
       pharmacy: '/pharmacy/dashboard',
-      laboratory: '/lab/dashboard',
+      laboratory: '/laboratory/dashboard',
     };
     
     navigate(dashboardRoutes[role] || '/');

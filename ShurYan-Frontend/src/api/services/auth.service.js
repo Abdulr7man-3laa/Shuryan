@@ -24,16 +24,6 @@ class AuthService {
     return response.data;
   }
 
-  /**
-   * Register Laboratory
-   * POST /Auth/register/laboratory
-   * @param {Object} data - Laboratory registration data
-   * @param {string} data.name - Laboratory name
-   * @param {string} data.email - Email address
-   * @param {string} data.password - Password
-   * @param {string} data.confirmPassword - Confirm password
-   * @returns {Promise<Object>} Response with isSuccess, message, data, statusCode
-   */
   async registerLaboratory(data) {
     const response = await apiClient.post('/Auth/register/laboratory', {
       name: data.name,
@@ -77,12 +67,6 @@ class AuthService {
     return response.data;
   }
 
-  /**
-   * Google OAuth Authentication
-   * @param {string} idToken - Google ID token
-   * @param {string|null} userType - "patient" | "doctor" | "pharmacy" | "laboratory" | null
-   * @returns {Promise} Response with isSuccess, message, data (user + tokens), statusCode
-   */
   async googleLogin(idToken, userType = null) {
     const response = await apiClient.post('/Auth/google', {
       idToken,

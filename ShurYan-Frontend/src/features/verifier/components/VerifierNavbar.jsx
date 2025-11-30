@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaStethoscope, FaBars, FaTimes, FaSignOutAlt, FaUserMd, FaPills, FaFlask, FaHome, FaChartBar } from 'react-icons/fa';
+import { FaBars, FaTimes, FaSignOutAlt, FaUserMd, FaPills, FaFlask, FaHome, FaChartBar } from 'react-icons/fa';
 import { useAuth } from '@/features/auth';
 import { APPLICATION_TYPE, TYPE_LABELS, TYPE_ICONS, VERIFIER_NAV_ITEMS } from '../constants/verifierConstants';
+import CircleLogo from '@/assets/CircleLogoPNG.png';
+import ArLogoWord from '@/assets/ArLogoWord.png';
 
 // Icon mapping for tabs
 const TAB_ICON_MAP = {
@@ -59,18 +61,16 @@ const VerifierNavbar = ({ activeTab, onTabChange }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-20">
           {/* Logo Section */}
-          <div className="flex items-center space-x-reverse space-x-4">
-            <Link to="/verifier/statistics" className="flex items-center space-x-reverse space-x-3 group">
-              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 ring-2 ring-teal-100">
-                <FaStethoscope className="w-6 h-6 text-white drop-shadow-sm" />
-              </div>
-              <div className="hidden sm:block text-right">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 bg-clip-text text-transparent drop-shadow-sm">
-                  شُريان
-                </h1>
-                <p className="text-xs text-gray-600 -mt-1 font-semibold tracking-wide">
-                  لوحة المراجع
-                </p>
+          <div className="flex items-center">
+            <Link to="/verifier/statistics" className="flex items-center group">
+              {/* Arabic Logo Text - Full Height */}
+              <div className="hidden sm:block h-16 py-2">
+                <img 
+                  src={ArLogoWord} 
+                  alt="شُريان - منصة الرعاية الصحية الذكية" 
+                  className="h-full w-auto object-contain transition-all duration-300 group-hover:scale-105"
+                  style={{ minWidth: '140px' }}
+                />
               </div>
             </Link>
           </div>

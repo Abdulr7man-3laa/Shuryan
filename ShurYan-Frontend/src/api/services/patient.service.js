@@ -24,25 +24,11 @@ class PatientService {
   // Patient Profile - Personal Info
   // ==========================================
 
-  /**
-   * Get patient personal information
-   * GET /Patients/me/profile
-   */
   async getPersonalInfo() {
     const response = await apiClient.get('/Patients/me/profile');
     return response.data?.data || null;
   }
 
-  /**
-   * Update patient personal information
-   * PUT /Patients/me/profile
-   * 
-   * Supports:
-   * - Upsert (create if not exists, update if exists)
-   * - Partial update (update only sent fields)
-   * 
-   * @param {Object} data - Personal info data
-   */
   async updatePersonalInfo(data) {
     console.log('📝 Updating personal info:', data);
 
@@ -51,19 +37,11 @@ class PatientService {
     return response.data;
   }
 
-  /**
-   * Get patient address
-   * GET /Patients/me/address
-   */
   async getAddress() {
     const response = await apiClient.get('/Patients/me/address');
     return response.data?.data || null;
   }
 
-  /**
-   * Update patient address
-   * PUT /Patients/me/address
-   */
   async updateAddress(data) {
     console.log('📍 Updating address:', {
       ...data,
@@ -75,12 +53,6 @@ class PatientService {
     return response.data;
   }
 
-  /**
-   * Update patient profile image
-   * PUT /Patients/me/profile-image
-   * 
-   * @param {File} imageFile - Profile image file
-   */
   async updateProfileImage(imageFile) {
     console.log('🖼️ Updating profile image:', imageFile?.name);
 
@@ -99,46 +71,16 @@ class PatientService {
   // Patient Medical Record
   // ==========================================
 
-  /**
-   * Get patient medical record
-   * GET /Patients/me/medical-record
-   */
   async getMedicalRecord() {
     const response = await apiClient.get('/Patients/me/medical-record');
     return response.data?.data || null;
   }
 
-  /**
-   * Update patient medical record
-   * PUT /Patients/me/medical-record
-   * 
-   * Supports:
-   * - Upsert (create if not exists, update if exists)
-   * - Partial update (update only sent sections)
-   * - Add/Edit/Delete items within sections
-   * 
-   * Update Logic:
-   * - Item with id → Update existing
-   * - Item without id → Add new
-   * - Existing item not in request → Delete
-   * 
-   * @param {Object} data - Medical record data
-   * @param {Array} data.drugAllergies - Optional
-   * @param {Array} data.chronicDiseases - Optional
-   * @param {Array} data.currentMedications - Optional
-   * @param {Array} data.previousSurgeries - Optional
-   */
   async updateMedicalRecord(data) {
     const response = await apiClient.put('/Patients/me/medical-record', data);
     return response.data;
   }
 
-  /**
-   * Get pharmacy response for patient's order
-   * GET /api/patients/me/orders/{orderId}/pharmacy-response
-   * @param {string} orderId - Order ID
-   * @returns {Promise<Object|null>} Pharmacy response data or null
-   */
   async getPharmacyResponse(orderId) {
     try {
       console.log(`📋 Fetching pharmacy response for order: ${orderId}`);

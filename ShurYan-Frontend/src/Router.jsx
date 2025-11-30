@@ -33,6 +33,7 @@ const PatientAppointmentsPage = lazy(() => import('@/features/patient/pages/Appo
 const PatientPrescriptionsPage = lazy(() => import('@/features/patient/pages/PrescriptionsPage'));
 const LabResultsPage = lazy(() => import('@/features/patient/pages/LabResultsPage'));
 const LabPrescriptionsPage = lazy(() => import('@/features/patient/pages/LabPrescriptionsPage'));
+const LabOrdersPage = lazy(() => import('@/features/patient/pages/LabOrdersPage'));
 const PaymentSuccessPage = lazy(() => import('@/features/patient/pages/PaymentSuccessPage'));
 const PaymentFailedPage = lazy(() => import('@/features/patient/pages/PaymentFailedPage'));
 
@@ -52,6 +53,9 @@ const StatisticsPage = lazy(() => import('@/features/verifier/pages/StatisticsPa
 const DoctorsPage = lazy(() => import('@/features/verifier/pages/DoctorsPage'));
 const PharmaciesPage = lazy(() => import('@/features/verifier/pages/PharmaciesPage'));
 const LaboratoriesPage = lazy(() => import('@/features/verifier/pages/LaboratoriesPage'));
+
+// Landing Page
+const HomePage = lazy(() => import('@/pages/home/HomePage'));
 
 // Error & Utility Pages
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
@@ -73,7 +77,11 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/login" replace />,
+        element: (
+          <SuspenseWrapper>
+            <HomePage />
+          </SuspenseWrapper>
+        ),
       },
       {
         path: 'unauthorized',
@@ -201,6 +209,16 @@ const router = createBrowserRouter([
           <ProtectedRoute roles={['patient']}>
             <SuspenseWrapper>
               <LabPrescriptionsPage />
+            </SuspenseWrapper>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'lab-orders',
+        element: (
+          <ProtectedRoute roles={['patient']}>
+            <SuspenseWrapper>
+              <LabOrdersPage />
             </SuspenseWrapper>
           </ProtectedRoute>
         ),

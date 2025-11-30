@@ -167,6 +167,91 @@ namespace Shuryan.Application.Services
             }
         }
 
+        /// <summary>
+        /// [Laboratory] Start lab work - Move order from AwaitingSamples to InProgressAtLab
+        /// Validates laboratory ownership and status transition
+        /// </summary>
+        public async Task<LabOrderResponse> StartLabWorkAsync(
+            Guid orderId, 
+            Guid laboratoryId, 
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Get order
+                var order = await _unitOfWork.LabOrders.GetByIdAsync(orderId);
+                if (order == null)
+                {
+                    _logger.LogWarning("Lab order {OrderId} not found", orderId);
+                    throw new ArgumentException($"طلب المعمل غير موجود");
+                }
+
+                // Verify laboratory ownership
+                if (order.LaboratoryId != laboratoryId)
+                {
+                    _logger.LogWarning("Laboratory {LaboratoryId} attempted to access order {OrderId} belonging to laboratory {OrderLaboratoryId}",
+                        laboratoryId, orderId, order.LaboratoryId);
+                    throw new UnauthorizedAccessException("غير مصرح لك بالوصول لهذا الطلب");
+                }
+
+                // Verify current status
+                if (order.Status != LabOrderStatus.AwaitingSamples)
+                {
+                    _logger.LogWarning("Cannot start lab work for order {OrderId} with status {Status}. Expected: AwaitingSamples",
+                        orderId, order.Status);
+                    throw new InvalidOperationException(
+                        $"لا يمكن بدء العمل على الطلب. الحالة الحالية: {GetStatusDescription(order.Status)}. " +
+                        $"يجب أن تكون الحالة: في انتظار العينات");
+                }
+
+                // Update status
+                order.Status = LabOrderStatus.InProgressAtLab;
+                order.UpdatedAt = DateTime.UtcNow;
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation(
+                    "Laboratory {LaboratoryId} started work on order {OrderId} - Status changed from AwaitingSamples to InProgressAtLab",
+                    laboratoryId, orderId);
+
+                return await GetLabOrderByIdAsync(orderId)
+                    ?? throw new InvalidOperationException("Failed to retrieve updated lab order");
+            }
+            catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                // Re-throw business logic exceptions
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error starting lab work for order {OrderId} by laboratory {LaboratoryId}",
+                    orderId, laboratoryId);
+                throw new InvalidOperationException("حدث خطأ أثناء بدء العمل على الطلب", ex);
+            }
+        }
+
+        /// <summary>
+        /// Get Arabic description for status
+        /// </summary>
+        private static string GetStatusDescription(LabOrderStatus status)
+        {
+            return status switch
+            {
+                LabOrderStatus.NewRequest => "طلب جديد",
+                LabOrderStatus.AwaitingLabReview => "في انتظار مراجعة المعمل",
+                LabOrderStatus.ConfirmedByLab => "تم التأكيد من المعمل",
+                LabOrderStatus.AwaitingPayment => "في انتظار الدفع",
+                LabOrderStatus.Paid => "تم الدفع",
+                LabOrderStatus.AwaitingSamples => "في انتظار العينات",
+                LabOrderStatus.InProgressAtLab => "قيد التنفيذ في المعمل",
+                LabOrderStatus.ResultsReady => "النتائج جاهزة",
+                LabOrderStatus.Completed => "تم الاستلام",
+                LabOrderStatus.CancelledByPatient => "ملغي من المريض",
+                LabOrderStatus.RejectedByLab => "مرفوض من المعمل",
+                _ => status.ToString()
+            };
+        }
+
         #endregion
 
         #region Payment

@@ -59,7 +59,7 @@ export const initiateAppointmentPayment = async (appointmentId, paymentMethod, p
     });
 
     const response = await apiClient.post(
-      `/api/payments/appointments/${appointmentId}/initiate`,
+      `/Payments/appointments/${appointmentId}/initiate`,
       {
         appointmentId,
         paymentMethod,
@@ -95,7 +95,7 @@ export const initiatePharmacyOrderPayment = async (pharmacyOrderId, paymentMetho
     });
 
     const response = await apiClient.post(
-      `/api/payments/pharmacy-orders/${pharmacyOrderId}/initiate`,
+      `/Payments/pharmacy-orders/${pharmacyOrderId}/initiate`,
       {
         pharmacyOrderId,
         paymentMethod,
@@ -131,7 +131,7 @@ export const initiateLabOrderPayment = async (labOrderId, paymentMethod, payment
     });
 
     const response = await apiClient.post(
-      `/api/payments/lab-orders/${labOrderId}/initiate`,
+      `/Payments/lab-orders/${labOrderId}/initiate`,
       {
         labOrderId,
         paymentMethod,
@@ -160,7 +160,7 @@ export const getPaymentDetails = async (paymentId) => {
   try {
     console.log('🔍 [PaymentService] Fetching payment details:', paymentId);
 
-    const response = await apiClient.get(`/api/payments/${paymentId}`);
+    const response = await apiClient.get(`/Payments/${paymentId}`);
 
     console.log('✅ [PaymentService] Payment details fetched:', response.data);
 
@@ -183,7 +183,7 @@ export const cancelPayment = async (paymentId) => {
   try {
     console.log('🚫 [PaymentService] Cancelling payment:', paymentId);
 
-    const response = await apiClient.post(`/api/payments/${paymentId}/cancel`);
+    const response = await apiClient.post(`/Payments/${paymentId}/cancel`);
 
     console.log('✅ [PaymentService] Payment cancelled:', response.data);
 
@@ -193,6 +193,29 @@ export const cancelPayment = async (paymentId) => {
     };
   } catch (error) {
     console.error('❌ [PaymentService] Failed to cancel payment:', error);
+    throw error;
+  }
+};
+
+/**
+ * Simulate payment success for lab order (Testing only)
+ * @param {string} labOrderId - Lab Order ID
+ * @returns {Promise<Object>} Simulation response
+ */
+export const simulateLabOrderPaymentSuccess = async (labOrderId) => {
+  try {
+    console.log('🧪 [PaymentService] Simulating payment success for lab order:', labOrderId);
+
+    const response = await apiClient.post(`/Payments/lab-orders/${labOrderId}/simulate-payment-success`);
+
+    console.log('✅ [PaymentService] Payment simulation successful:', response.data);
+
+    return {
+      success: true,
+      data: response.data?.data || response.data,
+    };
+  } catch (error) {
+    console.error('❌ [PaymentService] Failed to simulate payment:', error);
     throw error;
   }
 };
@@ -246,6 +269,7 @@ const paymentService = {
   initiateLabOrderPayment,
   getPaymentDetails,
   cancelPayment,
+  simulateLabOrderPaymentSuccess,
   getPaymentStatusName,
   getPaymentMethodName,
   getPaymentTypeName,

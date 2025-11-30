@@ -116,7 +116,7 @@ const VerifyEmailPage = () => {
       } else if (roleLower === 'pharmacy') {
         redirectPath = '/pharmacy/dashboard';
       } else if (roleLower === 'laboratory' || roleLower === 'lab') {
-        redirectPath = '/lab/dashboard';
+        redirectPath = '/laboratory/dashboard';
       } else if (roleLower === 'verifier') {
         redirectPath = '/verifier/statistics';
       }

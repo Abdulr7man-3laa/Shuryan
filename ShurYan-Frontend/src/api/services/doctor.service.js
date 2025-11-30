@@ -280,12 +280,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get today's appointments for the logged-in doctor
-   * @param {number} pageNumber - Page number (default: 1)
-   * @param {number} pageSize - Page size (default: 10)
-   * @returns {Promise<Object>} Today's appointments with pagination
-   */
   async getTodayAppointments(params = {}) {
     const { pageNumber = 1, pageSize = 10, date } = params;
     
@@ -310,18 +304,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get ALL appointments (past, today, future)
-   * @param {Object} params - Query parameters
-   * @param {number} params.pageNumber - Page number (default: 1)
-   * @param {number} params.pageSize - Page size (default: 50)
-   * @param {string} params.startDate - Start date filter (YYYY-MM-DD) - Optional
-   * @param {string} params.endDate - End date filter (YYYY-MM-DD) - Optional
-   * @param {number} params.status - Status filter (0-5) - Optional
-   * @param {string} params.sortBy - Sort by field - Optional
-   * @param {string} params.sortOrder - Sort order (asc/desc) - Optional
-   * @returns {Promise<Object>} All appointments with pagination
-   */
   async getAllAppointments(params = {}) {
     const { 
       pageNumber = 1, 
@@ -347,15 +329,6 @@ class DoctorService {
     return response.data;
   }
 
-  // ==================== Patients Management ====================
-
-  /**
-   * Get all patients who have completed appointments with the doctor
-   * @param {Object} params - Query parameters
-   * @param {number} params.pageNumber - Page number (default: 1)
-   * @param {number} params.pageSize - Page size (default: 20)
-   * @returns {Promise<Object>} Patients list with pagination
-   */
   async getPatients(params = {}) {
     const { pageNumber = 1, pageSize = 20 } = params;
     const response = await apiClient.get('/Doctors/me/patients', {
@@ -379,13 +352,6 @@ class DoctorService {
     return response.data;
   }
 
-  /**
-   * Get prescription details
-   * @param {string} patientId - Patient ID
-   * @param {string} doctorId - Doctor ID
-   * @param {string} prescriptionId - Prescription ID
-   * @returns {Promise<Object>} Prescription details with medications
-   */
   async getPrescriptionDetails(patientId, doctorId, prescriptionId) {
     const response = await apiClient.get(`/Prescriptions/patient/${patientId}/doctor/${doctorId}/prescription/${prescriptionId}`);
     return response.data;
@@ -443,23 +409,13 @@ class DoctorService {
 
   // ==================== Verification Endpoints ====================
   
-  /**
-   * Submit doctor profile for review
-   * POST /api/Doctors/me/submit-for-review
-   */
   async submitForReview() {
     const response = await apiClient.post('/Doctors/me/submit-for-review');
     return response.data;
   }
 
   // ==================== Reviews Endpoints ====================
-  
-  /**
-   * Get doctor reviews with pagination
-   * GET /api/Doctors/me/reviews
-   * @param {number} pageNumber - Page number (default: 1)
-   * @param {number} pageSize - Page size (default: 10)
-   */
+
   async getReviews(pageNumber = 1, pageSize = 10) {
     const response = await apiClient.get('/Doctors/me/reviews', {
       params: { pageNumber, pageSize }
@@ -467,20 +423,11 @@ class DoctorService {
     return response.data?.data || null;
   }
 
-  /**
-   * Get review statistics
-   * GET /api/Doctors/me/reviews/statistics
-   */
   async getReviewStatistics() {
     const response = await apiClient.get('/Doctors/me/reviews/statistics');
     return response.data?.data || null;
   }
 
-  /**
-   * Get review details by ID
-   * GET /api/Doctors/me/reviews/{reviewId}/details
-   * @param {string} reviewId - Review ID
-   */
   async getReviewDetails(reviewId) {
     const response = await apiClient.get(`/Doctors/me/reviews/${reviewId}/details`);
     return response.data?.data || null;

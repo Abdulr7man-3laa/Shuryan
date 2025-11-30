@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   FaEye, FaShoppingCart, FaUserMd, FaCalendarAlt,
-  FaStethoscope, FaHashtag, FaExclamationCircle, FaFileAlt, FaInfoCircle, FaFlask, FaClipboardList
+  FaStethoscope, FaHashtag, FaExclamationCircle, FaFileAlt, FaInfoCircle, FaFlask, FaClipboardList, FaCreditCard
 } from 'react-icons/fa';
 import LabPrescriptionDetailsModal from '../components/lab/LabPrescriptionDetailsModal';
 import OrderLabTestModal from '../components/OrderLabTestModal';
 import LabReportsModal from '../components/LabReportsModal';
+import PaymentModal from '../components/lab/PaymentModal';
 import { formatDate } from '@/utils/helpers';
 import useAuth from '../../auth/hooks/useAuth';
 import patientService from '@/api/services/patient.service';
@@ -37,6 +38,10 @@ const LabResultsPage = () => {
   const [labPrescriptionToOrder, setLabPrescriptionToOrder] = useState(null);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [labPrescriptionForReports, setLabPrescriptionForReports] = useState(null);
+  
+  // Payment modal state
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
 
   const fetchLabPrescriptions = async () => {
     setLoading(true);
@@ -526,6 +531,20 @@ const LabResultsPage = () => {
 
                           {/* Action Buttons */}
                           <div className="flex flex-col items-end gap-3">
+                            {/* Show payment button for orders awaiting payment (status = 4) */}
+                            {order.status === 4 && (
+                              <button
+                                onClick={() => {
+                                  setSelectedOrderForPayment(order);
+                                  setIsPaymentModalOpen(true);
+                                }}
+                                className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all font-bold text-sm shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
+                              >
+                                <FaCreditCard className="w-4 h-4" />
+                                الدفع الآن
+                              </button>
+                            )}
+                            
                             <button
                               onClick={() => {
                                 // Handle view order details
@@ -584,6 +603,24 @@ const LabResultsPage = () => {
           setIsOrderModalOpen(true);
         }}
       />
+
+      {/* Payment Modal */}
+      {isPaymentModalOpen && selectedOrderForPayment && (
+        <PaymentModal
+          order={selectedOrderForPayment}
+          onClose={() => {
+            setIsPaymentModalOpen(false);
+            setSelectedOrderForPayment(null);
+          }}
+          onPaymentSuccess={() => {
+            setIsPaymentModalOpen(false);
+            setSelectedOrderForPayment(null);
+            // Refresh lab orders after successful payment
+            fetchActiveLabOrders();
+            fetchCompletedLabOrders();
+          }}
+        />
+      )}
     </div>
   );
 };

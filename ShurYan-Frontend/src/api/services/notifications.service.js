@@ -1,14 +1,6 @@
 import apiClient from '../client';
 
-/**
- * Notifications API Service
- * التعامل مع الإشعارات من الباك اند
- */
 class NotificationsService {
-  /**
-   * جلب الإشعارات الغير مقروءة
-   * GET /api/notifications/unread
-   */
   async getUnreadNotifications() {
     try {
       const response = await apiClient.get('/notifications/unread');
@@ -19,10 +11,6 @@ class NotificationsService {
     }
   }
 
-  /**
-   * جلب جميع الإشعارات مع pagination
-   * GET /api/notifications?pageNumber=1&pageSize=20
-   */
   async getAllNotifications(pageNumber = 1, pageSize = 20) {
     try {
       const response = await apiClient.get('/notifications', {
@@ -43,10 +31,6 @@ class NotificationsService {
     }
   }
 
-  /**
-   * تحديد إشعار كمقروء
-   * PUT /api/notifications/{id}/mark-as-read
-   */
   async markAsRead(notificationId) {
     try {
       const response = await apiClient.put(`/notifications/${notificationId}/mark-as-read`);
@@ -58,10 +42,6 @@ class NotificationsService {
     }
   }
 
-  /**
-   * تحديد جميع الإشعارات كمقروءة
-   * PUT /api/notifications/mark-all-as-read
-   */
   async markAllAsRead() {
     try {
       const response = await apiClient.put('/notifications/mark-all-as-read');
@@ -73,10 +53,6 @@ class NotificationsService {
     }
   }
 
-  /**
-   * حذف إشعار
-   * DELETE /api/notifications/{id}
-   */
   async deleteNotification(notificationId) {
     try {
       const response = await apiClient.delete(`/notifications/${notificationId}`);
@@ -88,10 +64,6 @@ class NotificationsService {
     }
   }
 
-  /**
-   * جلب تفاصيل موعد (للاستخدام في الـ Modal)
-   * GET /api/appointments/{appointmentId}
-   */
   async getAppointmentDetails(appointmentId) {
     try {
       const response = await apiClient.get(`/Appointments/${appointmentId}`);
