@@ -126,7 +126,7 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
   const displayMessages = (!hasMessages && !isLoading) ? [welcomeMessage] : messages;
 
   return (
-    <div className="w-full h-[500px] sm:h-[600px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col relative" dir="rtl">
+    <div className="w-full h-[calc(100vh-8rem)] max-h-[600px] sm:h-[600px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col relative" dir="rtl">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#00d5be] to-[#00bfaa] px-4 py-3 rounded-t-2xl flex-shrink-0">
         <div className="flex items-center justify-between">
@@ -206,10 +206,10 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
             <div
               className={`flex ${message.role === 'user' ? 'justify-start' : 'justify-end'}`}
             >
-              <div className={`max-w-[80%] ${message.role === 'user' ? 'order-2' : 'order-1'}`}>
+              <div className={`max-w-[85%] sm:max-w-[80%] ${message.role === 'user' ? 'order-2' : 'order-1'}`}>
                 <div
                   className={`
-                    rounded-2xl px-4 py-3 shadow-sm
+                    rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm text-sm sm:text-base
                     ${message.role === 'user'
                       ? 'bg-gradient-to-br from-[#00d5be] to-[#00bfaa] text-white rounded-tr-sm'
                       : 'bg-white text-slate-800 rounded-tl-sm border border-slate-200'
@@ -217,9 +217,11 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
                   `}
                 >
                   {message.role === 'user' ? (
-                    <p className="text-sm font-medium leading-relaxed whitespace-pre-line">{message.content}</p>
+                    <p className="text-sm sm:text-sm font-medium leading-relaxed whitespace-pre-line">{message.content}</p>
                   ) : (
-                    <MarkdownText text={message.content} />
+                    <div className="text-sm sm:text-base">
+                      <MarkdownText text={message.content} />
+                    </div>
                   )}
                 </div>
                 <span className={`text-xs text-slate-500 mt-1 block ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
@@ -227,20 +229,20 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
                 </span>
               </div>
               {message.role === 'assistant' && (
-                <div className="w-8 h-8 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] rounded-full flex items-center justify-center flex-shrink-0 ml-2 order-2">
-                  <FaRobot className="text-white text-sm" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] rounded-full flex items-center justify-center flex-shrink-0 ml-1.5 sm:ml-2 order-2">
+                  <FaRobot className="text-white text-xs sm:text-sm" />
                 </div>
               )}
             </div>
 
             {/* Suggestions من الـ AI */}
             {message.role === 'assistant' && message.suggestions && message.suggestions.length > 0 && (
-              <div className="mr-10 mt-2 flex flex-wrap gap-2">
+              <div className="mr-8 sm:mr-10 mt-2 flex flex-wrap gap-1.5 sm:gap-2">
                 {message.suggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleQuickAction(suggestion)}
-                    className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-xs font-medium text-slate-700 transition-colors"
                   >
                     {suggestion}
                   </button>
@@ -250,12 +252,12 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
 
             {/* Actions من الـ AI */}
             {message.role === 'assistant' && message.actions && message.actions.length > 0 && (
-              <div className="mr-10 mt-2 flex flex-wrap gap-2">
+              <div className="mr-8 sm:mr-10 mt-2 flex flex-wrap gap-1.5 sm:gap-2">
                 {message.actions.map((action, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleAction(action)}
-                    className="px-3 py-1.5 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] hover:from-[#00bfaa] hover:to-[#00d5be] text-white rounded-lg text-xs font-semibold transition-all shadow-sm"
+                    className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] hover:from-[#00bfaa] hover:to-[#00d5be] text-white rounded-lg text-xs sm:text-xs font-semibold transition-all shadow-sm"
                   >
                     {action.label || action.type}
                   </button>
@@ -269,8 +271,8 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
         {isSending && (
           <div className="flex justify-end">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] rounded-full flex items-center justify-center flex-shrink-0 ml-2">
-                <FaRobot className="text-white text-sm" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] rounded-full flex items-center justify-center flex-shrink-0 ml-1.5 sm:ml-2">
+                <FaRobot className="text-white text-xs sm:text-sm" />
               </div>
               <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-slate-200">
                 <div className="flex gap-1">
@@ -326,23 +328,23 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
 
       {/* Quick Actions - تظهر فقط في البداية */}
       {!hasMessages && !isLoading && (
-        <div className="px-3 py-2 border-t border-slate-200 bg-white flex-shrink-0">
-          <div className="flex flex-wrap gap-2">
+        <div className="px-2 sm:px-3 py-2 border-t border-slate-200 bg-white flex-shrink-0">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             <button
               onClick={() => handleQuickAction('كيف أحجز موعد؟')}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs sm:text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
             >
               <span>كيف أحجز موعد؟</span>
             </button>
             <button
               onClick={() => handleQuickAction('أين أجد روشتاتي؟')}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs sm:text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
             >
               <span>أين أجد روشتاتي؟</span>
             </button>
             <button
               onClick={() => handleQuickAction('كيف أبحث عن طبيب؟')}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs sm:text-xs font-medium text-slate-700 transition-colors flex items-center gap-1"
             >
               <span>كيف أبحث عن طبيب؟</span>
             </button>
@@ -351,21 +353,21 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
       )}
 
       {/* Input */}
-      <div className="p-3 border-t border-slate-200 bg-white rounded-b-2xl flex-shrink-0">
-        <div className="flex gap-2">
+      <div className="p-2 sm:p-3 border-t border-slate-200 bg-white rounded-b-2xl flex-shrink-0">
+        <div className="flex gap-1.5 sm:gap-2">
           <input
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="اكتب رسالتك هنا..."
-            className="flex-1 px-3 py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00d5be] focus:ring-2 focus:ring-[#00d5be]/20 transition-all text-sm font-medium"
+            className="flex-1 px-2.5 py-2 sm:px-3 sm:py-2.5 border-2 border-slate-200 rounded-xl focus:border-[#00d5be] focus:ring-2 focus:ring-[#00d5be]/20 transition-all text-sm font-medium"
             disabled={isSending}
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isSending}
-            className="w-10 h-10 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] rounded-xl flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg flex-shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-[#00d5be] to-[#00bfaa] rounded-xl flex items-center justify-center hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg flex-shrink-0"
           >
             <FaPaperPlane className="text-white text-sm" />
           </button>
