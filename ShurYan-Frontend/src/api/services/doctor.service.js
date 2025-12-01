@@ -53,10 +53,18 @@ class DoctorService {
   }
 
   async updateSpecialtyExperience(data) {
+    console.log('📡 [API] updateSpecialtyExperience called with:', data);
+    console.log('📡 [API] Sending to backend:', {
+      medicalSpecialty: data.medicalSpecialty,
+      yearsOfExperience: data.yearsOfExperience,
+    });
+    
     const response = await apiClient.put('/Doctors/profile/specialty-experience', {
       medicalSpecialty: data.medicalSpecialty,
       yearsOfExperience: data.yearsOfExperience,
     });
+    
+    console.log('✅ [API] Response:', response.data);
     return response.data;
   }
 

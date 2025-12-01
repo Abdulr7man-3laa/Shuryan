@@ -108,14 +108,14 @@ const ProfessionalInfoSection = ({
                     <Combobox 
                       name="specialty" 
                       options={specialtyOptions} 
-                      displayValue={(option) => option?.name || ''} 
-                      value={specialtyOptions.find(opt => opt.name === formData.specialty) || null}
+                      displayValue={(option) => option?.label || ''} 
+                      value={specialtyOptions.find(opt => opt.label === formData.specialty) || null}
                       onChange={handleChange}
                       disabled={false}
                     >
                       {(option) => (
                         <ComboboxOption value={option}>
-                          <ComboboxLabel>{option.name}</ComboboxLabel>
+                          <ComboboxLabel>{option.label}</ComboboxLabel>
                         </ComboboxOption>
                       )}
                     </Combobox>

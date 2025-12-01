@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDoctorCanvas } from '../../hooks/useDoctorCanvas';
 
 const DrYoussef = new URL('../../assets/images/Dr-Youssef-Hamdi.png', import.meta.url).href;
@@ -13,6 +14,15 @@ const DoctorsSlider = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [canvasHeight, setCanvasHeight] = useState(
+    typeof window !== 'undefined' 
+      ? window.innerWidth < 640 ? 400 
+        : window.innerWidth < 768 ? 480 
+        : window.innerWidth < 810 ? 520 
+        : window.innerWidth < 1024 ? 580 
+        : 680
+      : 680
+  );
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -28,14 +38,31 @@ const DoctorsSlider = () => {
     { name: 'د. كريم عبد العزيز', specialty: 'طبيب قلب وأوعية دموية', rating: 5.0, reviews: 300, bio: 'استشاري أمراض القلب والقسطرة العلاجية، حاصل على الزمالة البريطانية لأمراض القلب.', experience: '20+ سنة خبرة', location: 'القاهرة - المعادي', imageSrc: DrKarim }
   ];
 
+  const navigate = useNavigate();
   const { drawCard } = useDoctorCanvas(canvasRef, doctorsData);
 
   useEffect(() => {
     drawCard(currentIndex);
   }, [currentIndex, drawCard]);
 
+  const handleBookNow = () => {
+    navigate('/login');
+  };
+
+  const handleViewProfile = () => {
+    navigate('/login');
+  };
+
   useEffect(() => {
     const handleResize = () => {
+      const width = window.innerWidth;
+      const newHeight = width < 640 ? 400 
+        : width < 768 ? 480 
+        : width < 810 ? 520 
+        : width < 1024 ? 580 
+        : 680;
+      setCanvasHeight(newHeight);
+      
       if (canvasRef.current && canvasRef.current.offsetParent !== null) {
         drawCard(currentIndex);
       }
@@ -128,46 +155,47 @@ const DoctorsSlider = () => {
 
 
   return (
-    <section id="doctors" className="w-full py-20 md:py-24">
+    <section id="doctors" className="w-full py-12 sm:py-16 md:py-20 lg:py-24">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Enhanced Header */}
-        <div className="text-center mb-16">
-          <div className="inline-block mb-4">
-            <span className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg">
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <div className="inline-block mb-3 sm:mb-4">
+            <span className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg">
               أطباء معتمدون
             </span>
           </div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-gray-900 mb-4 sm:mb-5 md:mb-6 leading-tight px-4">
             تعرف على <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-cyan-600">نخبة من أطبائنا</span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
             اختر من بين أفضل الأطباء والمتخصصين في مصر لبدء رحلتك الصحية مع <span className="font-semibold text-teal-600">شُريان</span>.
           </p>
         </div>
         
-        <div className="relative mx-auto px-4" style={{ maxWidth: '1200px' }}>
+        <div className="relative mx-auto px-2 sm:px-4" style={{ maxWidth: '1200px' }}>
+          {/* Navigation Buttons - Hidden on mobile, visible on md+ */}
           <button 
             onClick={nextDoctor} 
-            className="absolute top-1/2 -translate-y-1/2 -right-4 md:-right-15 lg:-right-15 bg-white/90 backdrop-blur-sm hover:bg-teal-50 rounded-full p-2 md:p-3 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 z-20 cursor-pointer hover:scale-110 active:scale-95"
+            className="hidden md:block absolute top-1/2 -translate-y-1/2 -right-4 lg:-right-12 xl:-right-16 bg-white/90 backdrop-blur-sm hover:bg-teal-50 rounded-full p-2 lg:p-3 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 z-20 cursor-pointer hover:scale-110 active:scale-95"
             aria-label="Next doctor"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-teal-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-teal-500 lg:w-7 lg:h-7">
               <path d="m9 18 6-6-6-6" />
             </svg>
           </button>
           
           <button 
             onClick={prevDoctor} 
-            className="absolute top-1/2 -translate-y-1/2 -left-4 md:-left-15 lg:-left-15 bg-white/90 backdrop-blur-sm hover:bg-teal-50 rounded-full p-2 md:p-3 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 z-20 cursor-pointer hover:scale-110 active:scale-95"
+            className="hidden md:block absolute top-1/2 -translate-y-1/2 -left-4 lg:-left-12 xl:-left-16 bg-white/90 backdrop-blur-sm hover:bg-teal-50 rounded-full p-2 lg:p-3 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 z-20 cursor-pointer hover:scale-110 active:scale-95"
             aria-label="Previous doctor"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-teal-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-teal-500 lg:w-7 lg:h-7">
               <path d="m15 18-6-6 6-6" />
             </svg>
           </button>
           
           <div 
-            className="relative w-full overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow duration-300"
+            className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl bg-white shadow-lg hover:shadow-xl transition-shadow duration-300"
             onMouseEnter={() => {
               // Save current progress when pausing
               if (startTimeRef.current) {
@@ -184,23 +212,39 @@ const DoctorsSlider = () => {
             <canvas 
               ref={canvasRef} 
               id="doctorCardCanvas" 
-              className="mx-auto w-full max-w-5xl cursor-text"
+              className="mx-auto w-full max-w-5xl"
               style={{ 
-                height: '680px',
+                height: `${canvasHeight}px`,
                 userSelect: 'text',
                 WebkitUserSelect: 'text',
                 MozUserSelect: 'text',
                 msUserSelect: 'text'
               }}
             />
+            
+            {/* Action Buttons - Positioned absolutely over canvas */}
+            <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-8 flex gap-2 sm:gap-3 z-10">
+              <button
+                onClick={handleBookNow}
+                className="px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-bold text-white bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+              >
+                احجز الآن
+              </button>
+              <button
+                onClick={handleViewProfile}
+                className="px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-bold text-teal-500 bg-white/90 backdrop-blur-sm hover:bg-white border-2 border-teal-500 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+              >
+                الملف الشخصي
+              </button>
+            </div>
           </div>
           
-          <div className="flex justify-center space-x-3 space-x-reverse mt-8">
+          <div className="flex justify-center space-x-2 sm:space-x-3 space-x-reverse mt-6 sm:mt-8">
             {doctorsData.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToDoctor(index)}
-                className={`relative w-4 h-4 rounded-full transition-all duration-300 cursor-pointer hover:scale-125 active:scale-110 ${
+                className={`relative w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-300 cursor-pointer hover:scale-125 active:scale-110 ${
                   index === currentIndex ? 'bg-teal-500 scale-125' : 'bg-gray-300 hover:bg-gray-400'
                 }`}
                 aria-label={`Go to doctor ${index + 1}`}

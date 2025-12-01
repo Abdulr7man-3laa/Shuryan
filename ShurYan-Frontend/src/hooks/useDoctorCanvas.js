@@ -166,69 +166,58 @@ export const useDoctorCanvas = (canvasRef, doctorsData) => {
     ctx.restore();
   }, [config.colors.lightText, config.colors.star, config.colors.separator, drawStar]);
 
-  const drawActions = useCallback((ctx, w, h, x, contentAreaWidth) => {
-    const actionHeight = 48;
-    const buttonWidth = Math.min(140, contentAreaWidth / 2 - 10);
-    const buttonGap = 15;
-    const buttonFontSize = Math.max(16, w * 0.019);
-    const buttonsY = h - actionHeight - config.padding;
-    const rightEdge = x + contentAreaWidth;
-    const bookButtonX = rightEdge - buttonWidth;
-    drawRoundedRect(ctx, bookButtonX, buttonsY, buttonWidth, actionHeight, 12);
-    ctx.fillStyle = config.colors.primary;
-    ctx.fill();
-    ctx.font = `bold ${buttonFontSize}px Cairo`;
-    ctx.fillStyle = config.colors.white;
-    ctx.textAlign = 'center';
-    ctx.fillText('احجز الآن', bookButtonX + buttonWidth / 2, buttonsY + actionHeight / 2 + 6);
-    const profileButtonX = bookButtonX - buttonGap - buttonWidth;
-    ctx.fillStyle = config.colors.primary;
-    ctx.textAlign = 'center';
-    ctx.fillText('الملف الشخصي', profileButtonX + buttonWidth / 2, buttonsY + actionHeight / 2 + 6);
-    ctx.textAlign = 'right';
-  }, [config.padding, config.colors.primary, config.colors.white, drawRoundedRect]);
 
   const drawDoctorInfo = useCallback((ctx, w, h, doctor) => {
     ctx.save();
     ctx.direction = 'rtl';
+    const screenWidth = window.innerWidth;
     const imgWidth = w * 0.5;
-    const contentStartX = imgWidth + config.padding;
-    const contentAreaX = w - config.padding;
+    const responsivePadding = screenWidth < 640 ? 20 : screenWidth < 810 ? 25 : config.padding;
+    const contentStartX = imgWidth + responsivePadding;
+    const contentAreaX = w - responsivePadding;
     const contentAreaWidth = contentAreaX - contentStartX;
-    const actionHeight = 48;
-    const contentTopY = config.padding;
-    const contentBottomY = h - config.padding - actionHeight;
+    const actionHeight = screenWidth < 640 ? 36 : screenWidth < 810 ? 42 : 48;
+    const contentTopY = responsivePadding;
+    const contentBottomY = h - responsivePadding - actionHeight;
     const availableHeight = contentBottomY - contentTopY;
     let currentY = contentTopY + (availableHeight * 0.05);
-    const nameFontSize = Math.max(28, w * 0.038);
+    const nameFontSize = screenWidth < 640 ? 20 : screenWidth < 768 ? 22 : screenWidth < 810 ? 24 : screenWidth < 1024 ? 26 : Math.max(28, w * 0.038);
     ctx.font = `800 ${nameFontSize}px Cairo`;
     ctx.fillStyle = config.colors.darkText;
     ctx.textAlign = 'right';
     ctx.fillText(doctor.name, contentAreaX, currentY);
     currentY += nameFontSize * 1.3;
-    const specialtyFontSize = Math.max(19, w * 0.023);
+    const specialtyFontSize = screenWidth < 640 ? 14 : screenWidth < 768 ? 15 : screenWidth < 810 ? 16 : screenWidth < 1024 ? 17 : Math.max(19, w * 0.023);
     ctx.font = `700 ${specialtyFontSize}px Cairo`;
     ctx.fillStyle = config.colors.primary;
     ctx.fillText(doctor.specialty, contentAreaX, currentY);
     currentY = contentTopY + (availableHeight * 0.28);
-    drawRatingStars(ctx, contentAreaX, currentY, doctor.rating, 20, `${doctor.rating} (${doctor.reviews} تقييم)`);
+    const starSize = screenWidth < 640 ? 14 : screenWidth < 810 ? 16 : 20;
+    drawRatingStars(ctx, contentAreaX, currentY, doctor.rating, starSize, `${doctor.rating} (${doctor.reviews} تقييم)`);
     currentY = contentTopY + (availableHeight * 0.45);
-    const bioFontSize = Math.max(17, w * 0.021);
+    const bioFontSize = screenWidth < 640 ? 13 : screenWidth < 768 ? 14 : screenWidth < 810 ? 15 : screenWidth < 1024 ? 16 : Math.max(17, w * 0.021);
     ctx.font = `500 ${bioFontSize}px Cairo`;
     ctx.fillStyle = config.colors.lightText;
     wrapText(ctx, doctor.bio, contentAreaX, currentY, contentAreaWidth, bioFontSize * 1.8);
-    currentY = contentTopY + (availableHeight * 0.85);
-    const metaFontSize = Math.max(16, w * 0.019);
+    currentY = contentTopY + (availableHeight * 0.75);
+    const metaFontSize = screenWidth < 640 ? 12 : screenWidth < 768 ? 13 : screenWidth < 810 ? 14 : screenWidth < 1024 ? 15 : Math.max(16, w * 0.019);
+    const lineHeight = metaFontSize * 1.8;
     ctx.font = `700 ${metaFontSize}px Cairo`;
     ctx.fillStyle = config.colors.darkText;
-    ctx.fillText(doctor.experience, contentAreaX - 30, currentY + 5);
-    drawIcon(ctx, icons.briefcase, contentAreaX - 5, currentY - 8, 20);
-    const locationTextWidth = ctx.measureText(doctor.location).width;
-    ctx.fillText(doctor.location, contentStartX + locationTextWidth + 30, currentY + 5);
-    drawIcon(ctx, icons.location, contentStartX + locationTextWidth + 38, currentY - 8, 20);
-    drawActions(ctx, w, h, contentStartX, contentAreaWidth);
+    const iconSize = screenWidth < 640 ? 16 : screenWidth < 810 ? 18 : 20;
+    const iconOffset = screenWidth < 640 ? 22 : screenWidth < 810 ? 26 : 30;
+    
+    // Experience (first line)
+    ctx.fillText(doctor.experience, contentAreaX - iconOffset, currentY + 5);
+    drawIcon(ctx, icons.briefcase, contentAreaX - 5, currentY - 8, iconSize);
+    
+    // Location (second line - below experience)
+    currentY += lineHeight;
+    ctx.fillText(doctor.location, contentAreaX - iconOffset, currentY + 5);
+    drawIcon(ctx, icons.location, contentAreaX - 5, currentY - 8, iconSize);
+    
     ctx.restore();
-  }, [config.padding, config.colors.darkText, config.colors.primary, config.colors.lightText, drawRatingStars, wrapText, drawIcon, icons, drawActions]);
+  }, [config.padding, config.colors.darkText, config.colors.primary, config.colors.lightText, drawRatingStars, wrapText, drawIcon, icons]);
 
   const drawCard = useCallback((index) => {
     const canvas = canvasRef.current;
@@ -236,10 +225,26 @@ export const useDoctorCanvas = (canvasRef, doctorsData) => {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.parentElement.getBoundingClientRect();
+    
+    // Responsive height based on screen width
+    const screenWidth = window.innerWidth;
+    let targetHeight;
+    if (screenWidth < 640) {
+      targetHeight = 400; // Mobile
+    } else if (screenWidth < 768) {
+      targetHeight = 480; // Small tablet
+    } else if (screenWidth < 810) {
+      targetHeight = 520; // Medium tablet
+    } else if (screenWidth < 1024) {
+      targetHeight = 580; // Large tablet
+    } else {
+      targetHeight = 680; // Desktop
+    }
+    
     canvas.width = rect.width * dpr;
-    canvas.height = Math.min((rect.width * 0.58) * dpr, 580 * dpr);
+    canvas.height = targetHeight * dpr;
     canvas.style.width = `${rect.width}px`;
-    canvas.style.height = `${canvas.height / dpr}px`;
+    canvas.style.height = `${targetHeight}px`;
     ctx.scale(dpr, dpr);
     const canvasW = canvas.width / dpr;
     const canvasH = canvas.height / dpr;

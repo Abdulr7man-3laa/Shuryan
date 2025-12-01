@@ -8,6 +8,9 @@ const ProfileSidebar = ({ formData, activeSection, setActiveSection }) => {
   const { user, updateUser } = useAuthStore();
   const [verificationStatus, setVerificationStatus] = useState(user?.verificationStatus);
   
+  // Log specialty for debugging
+  console.log('👤 [ProfileSidebar] formData.specialty:', formData.specialty);
+  
   // Fetch verification status from API
   useEffect(() => {
     const fetchVerificationStatus = async () => {

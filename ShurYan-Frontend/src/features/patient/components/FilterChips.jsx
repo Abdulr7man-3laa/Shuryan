@@ -67,7 +67,7 @@ const FilterChips = ({
     (availableToday ? 1 : 0);
 
   // Get specialty name by ID for display
-  const getSpecialtyName = (id) => getSpecialtyById(id)?.name || 'غير محدد';
+  const getSpecialtyName = (id) => getSpecialtyById(id)?.label || 'غير محدد';
 
   const FilterChip = ({ label, icon, count, onClick, isActive }) => (
     <button
@@ -127,16 +127,16 @@ const FilterChips = ({
             <div className="max-h-64 overflow-y-auto">
               {SPECIALTIES.map((specialty) => (
                 <label
-                  key={specialty.id}
+                  key={specialty.value}
                   className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors"
                 >
                   <input
                     type="checkbox"
-                    checked={selectedSpecialties.includes(specialty.id)}
-                    onChange={() => handleSpecialtyChange(specialty.id)}
+                    checked={selectedSpecialties.includes(specialty.value)}
+                    onChange={() => handleSpecialtyChange(specialty.value)}
                     className="w-4 h-4 text-[#00d5be] border-slate-300 rounded focus:ring-[#00d5be]"
                   />
-                  <span className="text-sm text-slate-700">{specialty.name}</span>
+                  <span className="text-sm text-slate-700">{specialty.label}</span>
                 </label>
               ))}
             </div>

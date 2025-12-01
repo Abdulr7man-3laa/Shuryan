@@ -139,10 +139,15 @@ const DoctorProfilePage = () => {
       const response = await doctorService.getSpecialtyExperience();
       const data = response.data || response;
       
-      console.log('Fetched specialty and experience:', data);
+      console.log('📥 [Fetch] Specialty & Experience response:', data);
+      console.log('📥 [Fetch] medicalSpecialty enum:', data.medicalSpecialty);
       
-      // Map medicalSpecialty enum to specialty name
-      const specialtyName = SPECIALTIES.find(s => s.id === data.medicalSpecialty)?.name || '';
+      // Map medicalSpecialty enum to specialty name using 'value' property
+      const specialtyObj = SPECIALTIES.find(s => s.value === data.medicalSpecialty);
+      const specialtyName = specialtyObj?.label || '';
+      
+      console.log('📥 [Fetch] Found specialty object:', specialtyObj);
+      console.log('📥 [Fetch] Specialty name (label):', specialtyName);
       
       setFormData(prev => ({
         ...prev,
@@ -150,8 +155,10 @@ const DoctorProfilePage = () => {
         experience: data.yearsOfExperience?.toString() || '',
       }));
       
+      console.log('✅ [Fetch] FormData updated with specialty:', specialtyName);
+      
     } catch (error) {
-      console.error('Failed to fetch specialty and experience:', error);
+      console.error('❌ [Fetch] Failed to fetch specialty and experience:', error);
     }
   }, []);
 
@@ -358,7 +365,11 @@ const DoctorProfilePage = () => {
     
     // Handle Combobox change (returns object)
     if ((name === 'gender' || name === 'specialty') && typeof value === 'object') {
-      setFormData(prev => ({ ...prev, [name]: value.name }));
+      // For specialty, use 'label' property; for gender, use 'name'
+      const fieldValue = name === 'specialty' ? value.label : value.name;
+      console.log(`🔄 [handleChange] ${name} selected:`, value);
+      console.log(`✅ [handleChange] Setting ${name} to:`, fieldValue);
+      setFormData(prev => ({ ...prev, [name]: fieldValue }));
       return;
     }
     
@@ -446,7 +457,8 @@ const DoctorProfilePage = () => {
       
       // 3. Save specialty and experience
       if (formData.specialty || formData.experience) {
-        const specialtyEnum = SPECIALTIES.find(s => s.name === formData.specialty)?.id || 0;
+        const specialtyEnum = SPECIALTIES.find(s => s.label === formData.specialty)?.value || 0;
+        console.log(`💾 [AutoSave] Specialty: "${formData.specialty}" → Enum: ${specialtyEnum}`);
         promises.push(
           doctorService.updateSpecialtyExperience({
             medicalSpecialty: specialtyEnum,
@@ -574,8 +586,11 @@ const DoctorProfilePage = () => {
   
   // Auto-save effect - triggers 3 seconds after changes
   useEffect(() => {
+    console.log('⏰ [Auto-save Effect] Triggered');
+    
     // Skip if no changes or initial load
     if (!hasChangesRef.current) {
+      console.log('🔵 [Auto-save Effect] First load - initializing');
       hasChangesRef.current = true; // Mark as initialized
       lastSavedDataRef.current = JSON.stringify(formData);
       return;
@@ -584,8 +599,13 @@ const DoctorProfilePage = () => {
     // Check if data actually changed (not just from fetch)
     const currentData = JSON.stringify(formData);
     if (currentData === lastSavedDataRef.current) {
+      console.log('⏭️ [Auto-save Effect] No changes detected - skipping');
       return; // No real changes, skip auto-save
     }
+    
+    console.log('🟢 [Auto-save Effect] Changes detected - scheduling save in 3 seconds');
+    console.log('📝 [Auto-save Effect] Specialty:', formData.specialty);
+    console.log('📝 [Auto-save Effect] Experience:', formData.experience);
     
     // Clear existing timeout
     if (autoSaveTimeoutRef.current) {
@@ -594,6 +614,7 @@ const DoctorProfilePage = () => {
     
     // Set new timeout for 3 seconds (without showing pending status)
     autoSaveTimeoutRef.current = setTimeout(() => {
+      console.log('🚀 [Auto-save Effect] Timeout reached - calling performAutoSave');
       performAutoSave();
     }, 3000);
     
