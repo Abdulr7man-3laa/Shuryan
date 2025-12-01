@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuthStore } from '@/features/auth';
 import doctorService from '@/api/services/doctor.service';
 import ProfileSidebar from '../components/ProfileSidebar';
-import PersonalInfoSection from '../components/PersonalInfoSection.Jsx';
+import PersonalInfoSection from '../components/PersonalInfoSection.jsx';
 import ProfessionalInfoSection from '../components/ProfessionalInfoSection';
 import ClinicInfoSection from '../components/ClinicInfoSection';
 import ServicesSection from '../components/ServicesSection';
