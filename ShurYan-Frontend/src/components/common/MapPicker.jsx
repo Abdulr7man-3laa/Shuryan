@@ -22,23 +22,29 @@ const clinicIcon = new L.Icon({
 });
 
 // Component to handle map clicks and place marker
-function LocationMarker({ position, setPosition, disabled, isUserInteractionRef, lastPropsRef }) {
+function LocationMarker({ position, setPosition, disabled, isUserInteractionRef, lastPropsRef, onLocationChange }) {
   useMapEvents({
     click(e) {
       if (disabled) return;
-      
+
       // Mark as user interaction
       isUserInteractionRef.current = true;
-      
+
       const newPos = {
         lat: e.latlng.lat,
         lng: e.latlng.lng
       };
-      
+
       setPosition(newPos);
-      
+
       // Update lastPropsRef to prevent props override
       lastPropsRef.current = { lat: newPos.lat, lng: newPos.lng };
+
+      // Immediately notify parent with coordinates (without waiting for address fetch)
+      if (onLocationChange) {
+        console.log('🗺️ MapPicker: User clicked on map, notifying parent immediately');
+        onLocationChange(newPos.lat, newPos.lng, null);
+      }
     },
   });
 
@@ -50,7 +56,7 @@ function LocationMarker({ position, setPosition, disabled, isUserInteractionRef,
 // Component to update map center when position changes
 function MapUpdater({ center }) {
   const map = useMap();
-  
+
   useEffect(() => {
     if (center && center.lat && center.lng) {
       map.flyTo([center.lat, center.lng], 13, {
@@ -58,13 +64,13 @@ function MapUpdater({ center }) {
       });
     }
   }, [center, map]);
-  
+
   return null;
 }
 
-const MapPicker = ({ 
+const MapPicker = ({
   latitude = 30.0444, // Cairo default
-  longitude = 31.2357, 
+  longitude = 31.2357,
   onLocationChange,
   disabled = false,
   triggerAddressFetch = false // Flag to trigger address fetch from parent
@@ -87,25 +93,25 @@ const MapPicker = ({
       const newLng = parseFloat(longitude);
       const lastLat = parseFloat(lastPropsRef.current.lat);
       const lastLng = parseFloat(lastPropsRef.current.lng);
-      
+
       // Skip if GPS action is in progress
       if (isGPSActionRef.current) {
         console.log('🗺️ MapPicker: Skipping props update - GPS action in progress');
         return;
       }
-      
+
       // Only update if props actually changed (not from our own update)
       const latChanged = Math.abs(newLat - lastLat) > 0.00001;
       const lngChanged = Math.abs(newLng - lastLng) > 0.00001;
-      
+
       if (latChanged || lngChanged) {
-        console.log('🗺️ MapPicker: Props changed, updating position', { 
-          from: { lat: lastLat, lng: lastLng }, 
-          to: { lat: newLat, lng: newLng } 
+        console.log('🗺️ MapPicker: Props changed, updating position', {
+          from: { lat: lastLat, lng: lastLng },
+          to: { lat: newLat, lng: newLng }
         });
         setPosition({ lat: newLat, lng: newLng });
         lastPropsRef.current = { lat: newLat, lng: newLng };
-        
+
         // Store GPS coordinates when they first arrive
         if (!gpsCoordinatesRef.current) {
           gpsCoordinatesRef.current = { lat: newLat, lng: newLng };
@@ -114,16 +120,16 @@ const MapPicker = ({
       }
     }
   }, [latitude, longitude]);
-  
+
   // Handle triggerAddressFetch from parent (e.g., "موقعي" button)
   useEffect(() => {
     if (triggerAddressFetch && gpsCoordinatesRef.current) {
       console.log('🗺️ MapPicker: Parent triggered address fetch');
       console.log('🗺️ MapPicker: Using GPS coordinates', gpsCoordinatesRef.current);
-      
+
       // Set GPS action flag
       isGPSActionRef.current = true;
-      
+
       // Fetch address using stored GPS coordinates
       const { lat, lng } = gpsCoordinatesRef.current;
       getAddressFromCoordinates(lat, lng, true).finally(() => {
@@ -145,10 +151,10 @@ const MapPicker = ({
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ar`
       );
       const data = await response.json();
-      
+
       if (data.display_name) {
         setAddress(data.display_name);
-        
+
         // Extract address components
         const addressDetails = {
           governorate: data.address?.state || data.address?.province || '',
@@ -156,10 +162,10 @@ const MapPicker = ({
           street: data.address?.road || data.address?.street || '',
           fullAddress: data.display_name
         };
-        
+
         console.log('🗺️ MapPicker: Address details extracted:', addressDetails);
         console.log('🗺️ MapPicker: isUserAction:', isUserAction);
-        
+
         // Return address details to parent if user action
         if (onLocationChange && isUserAction) {
           console.log('🗺️ MapPicker: Calling onLocationChange with addressDetails');
@@ -179,7 +185,7 @@ const MapPicker = ({
       const isUserAction = isUserInteractionRef.current;
       console.log('🗺️ MapPicker: Position changed, fetching address...', { isUserAction });
       getAddressFromCoordinates(position.lat, position.lng, isUserAction);
-      
+
       // Reset flag after handling
       if (isUserAction) {
         setTimeout(() => {
@@ -207,19 +213,20 @@ const MapPicker = ({
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
+
           {/* Update map center when position changes */}
           <MapUpdater center={position} />
-          
+
           {!disabled && (
-            <LocationMarker 
-              position={position} 
-              setPosition={setPosition} 
+            <LocationMarker
+              position={position}
+              setPosition={setPosition}
               isUserInteractionRef={isUserInteractionRef}
               lastPropsRef={lastPropsRef}
+              onLocationChange={onLocationChange}
             />
           )}
-          
+
           {disabled && position && (
             <Marker position={[position.lat, position.lng]} icon={clinicIcon} />
           )}

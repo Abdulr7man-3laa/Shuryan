@@ -284,22 +284,6 @@ const ChatBot = ({ onClose, isDropdown = false }) => {
             </div>
           </div>
         )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-            <FaExclamationTriangle className="text-red-500 text-sm mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-800">{error}</p>
-              <button
-                onClick={clearError}
-                className="text-xs text-red-600 hover:text-red-700 font-semibold mt-1"
-              >
-                إخفاء
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Clear Chat Confirmation Modal */}

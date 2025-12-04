@@ -49,7 +49,7 @@ const AddressSection = () => {
       // Validate and fix coordinates from backend
       const lat = address.latitude || 30.0444;
       const lng = address.longitude || 31.2357;
-      
+
       const initialData = {
         governorate: address.governorate || 1,
         city: address.city || '',
@@ -75,16 +75,57 @@ const AddressSection = () => {
   };
 
   // Handle location change from map
-  const handleLocationChange = (location) => {
+  const handleLocationChange = (lat, lng, addressDetails = null) => {
     // Validate coordinates (Egypt bounds: lat 22-32, lng 25-35)
-    const lat = Math.max(22, Math.min(32, location.lat));
-    const lng = Math.max(25, Math.min(35, Math.abs(location.lng))); // Ensure positive
-    
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-    }));
+    const validLat = Math.max(22, Math.min(32, lat));
+    const validLng = Math.max(25, Math.min(35, Math.abs(lng))); // Ensure positive
+
+    console.log('📍 AddressSection: Location changed', { lat: validLat, lng: validLng, addressDetails });
+
+    // If address details are provided (from map click), update them too
+    if (addressDetails) {
+      // Map governorate name to enum value
+      const governorateMap = {
+        'القاهرة': 1,
+        'Cairo': 1,
+        'الجيزة': 2,
+        'Giza': 2,
+        'الإسكندرية': 3,
+        'Alexandria': 3,
+        'الدقهلية': 4,
+        'Dakahlia': 4,
+        'الشرقية': 5,
+        'Sharqia': 5,
+        'القليوبية': 6,
+        'Qalyubia': 6,
+        'البحيرة': 7,
+        'Beheira': 7,
+        'المنوفية': 8,
+        'Monufia': 8,
+        'الغربية': 9,
+        'Gharbia': 9,
+        'كفر الشيخ': 10,
+        'Kafr El Sheikh': 10,
+      };
+
+      const governorateValue = governorateMap[addressDetails.governorate] || 1;
+
+      setFormData((prev) => ({
+        ...prev,
+        latitude: validLat,
+        longitude: validLng,
+        governorate: governorateValue,
+        city: addressDetails.city || prev.city,
+        street: addressDetails.street || prev.street,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        latitude: validLat,
+        longitude: validLng,
+      }));
+    }
+
     hasChangesRef.current = true;
     setAutoSaveStatus('pending');
   };
@@ -100,7 +141,7 @@ const AddressSection = () => {
       if (data.address) {
         // Extract governorate (state/province)
         const governorateName = data.address.state || data.address.province || data.address.city || '';
-        
+
         // Map governorate name to enum value
         const governorateMap = {
           'القاهرة': 1,
@@ -210,7 +251,7 @@ const AddressSection = () => {
         latitude: Math.max(22, Math.min(32, formData.latitude)),
         longitude: Math.max(25, Math.min(35, Math.abs(formData.longitude))),
       };
-      
+
       console.log('📍 Sending address data:', validatedData);
       const result = await updateAddress(validatedData);
 
@@ -263,17 +304,16 @@ const AddressSection = () => {
           {/* Auto-save status */}
           {autoSaveStatus && (
             <div
-              className={`px-4 py-2 backdrop-blur-sm rounded-lg ${
-                autoSaveStatus === 'pending'
+              className={`px-4 py-2 backdrop-blur-sm rounded-lg ${autoSaveStatus === 'pending'
                   ? 'bg-yellow-500/20 text-yellow-100'
                   : autoSaveStatus === 'saving'
-                  ? 'bg-blue-500/20 text-blue-100'
-                  : autoSaveStatus === 'saved'
-                  ? 'bg-green-500/30 text-green-100'
-                  : autoSaveStatus === 'error'
-                  ? 'bg-red-500/20 text-red-100'
-                  : ''
-              }`}
+                    ? 'bg-blue-500/20 text-blue-100'
+                    : autoSaveStatus === 'saved'
+                      ? 'bg-green-500/30 text-green-100'
+                      : autoSaveStatus === 'error'
+                        ? 'bg-red-500/20 text-red-100'
+                        : ''
+                }`}
             >
               <span className="text-sm font-medium flex items-center gap-2">
                 {autoSaveStatus === 'pending' && '⏳ سيتم الحفظ خلال 3 ثواني...'}
