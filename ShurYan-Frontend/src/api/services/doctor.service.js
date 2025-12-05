@@ -58,12 +58,12 @@ class DoctorService {
       medicalSpecialty: data.medicalSpecialty,
       yearsOfExperience: data.yearsOfExperience,
     });
-    
+
     const response = await apiClient.put('/Doctors/profile/specialty-experience', {
       medicalSpecialty: data.medicalSpecialty,
       yearsOfExperience: data.yearsOfExperience,
     });
-    
+
     console.log('✅ [API] Response:', response.data);
     return response.data;
   }
@@ -80,7 +80,7 @@ class DoctorService {
   async uploadResearchDocument(file) {
     const formData = new FormData();
     formData.append('documentFile', file);
-    formData.append('type', '7'); 
+    formData.append('type', '7');
 
     const response = await apiClient.post('/Doctors/me/documents/research', formData);
     return response.data;
@@ -121,7 +121,7 @@ class DoctorService {
   }
 
   // ==================== Clinic Management ====================
-  
+
   async getClinicInfo() {
     const response = await apiClient.get('/Doctors/me/clinic/info');
     return response.data;
@@ -185,7 +185,7 @@ class DoctorService {
   }
 
   // ==================== Services & Pricing ====================
-  
+
   async getRegularCheckup() {
     const response = await apiClient.get('/Doctors/me/services/regular-checkup');
     return response.data;
@@ -213,7 +213,7 @@ class DoctorService {
   }
 
   // ==================== Appointment Settings ====================
-  
+
   async getWeeklySchedule() {
     const response = await apiClient.get('/Doctors/me/appointments/schedule');
     return response.data;
@@ -266,7 +266,7 @@ class DoctorService {
     const payload = {};
     if (partnerData.pharmacyId) payload.pharmacyId = partnerData.pharmacyId;
     if (partnerData.laboratoryId) payload.laboratoryId = partnerData.laboratoryId;
-    
+
     const response = await apiClient.post('/Doctors/me/partner/suggest', payload);
     return response.data;
   }
@@ -290,7 +290,7 @@ class DoctorService {
 
   async getTodayAppointments(params = {}) {
     const { pageNumber = 1, pageSize = 10, date } = params;
-    
+
     // Get today's date in YYYY-MM-DD format if not provided
     const today = date || (() => {
       const now = new Date();
@@ -299,12 +299,12 @@ class DoctorService {
       const day = String(now.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     })();
-    
+
     console.log('📅 Fetching appointments for date:', today);
-    
+
     const response = await apiClient.get('/Doctors/me/dashboard/appointments/today', {
-      params: { 
-        pageNumber, 
+      params: {
+        pageNumber,
         pageSize,
         date: today  // Send date to backend
       }
@@ -313,8 +313,8 @@ class DoctorService {
   }
 
   async getAllAppointments(params = {}) {
-    const { 
-      pageNumber = 1, 
+    const {
+      pageNumber = 1,
       pageSize = 50,
       startDate = null,
       endDate = null,
@@ -322,10 +322,10 @@ class DoctorService {
       sortBy = 'appointmentDate',
       sortOrder = 'desc'
     } = params;
-    
+
     const response = await apiClient.get('/Doctors/me/dashboard/appointments', {
-      params: { 
-        pageNumber, 
+      params: {
+        pageNumber,
         pageSize,
         ...(startDate && { startDate }),
         ...(endDate && { endDate }),
@@ -362,6 +362,16 @@ class DoctorService {
 
   async getPrescriptionDetails(patientId, doctorId, prescriptionId) {
     const response = await apiClient.get(`/Prescriptions/patient/${patientId}/doctor/${doctorId}/prescription/${prescriptionId}`);
+    return response.data;
+  }
+
+  async getPatientLabPrescriptions(patientId) {
+    const response = await apiClient.get(`/Doctors/me/patients/${patientId}/lab-prescriptions`);
+    return response.data;
+  }
+
+  async getLabPrescriptionDetails(prescriptionId) {
+    const response = await apiClient.get(`/Doctors/me/lab-prescriptions/${prescriptionId}/details`);
     return response.data;
   }
 
@@ -416,7 +426,7 @@ class DoctorService {
   }
 
   // ==================== Verification Endpoints ====================
-  
+
   async submitForReview() {
     const response = await apiClient.post('/Doctors/me/submit-for-review');
     return response.data;

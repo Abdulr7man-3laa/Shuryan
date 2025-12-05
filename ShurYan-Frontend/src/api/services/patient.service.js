@@ -589,6 +589,40 @@ class PatientService {
   }
 
   /**
+   * Get lab prescription for a specific appointment
+   * GET /api/patients/me/appointments/{appointmentId}/lab-prescriptions
+   * @param {string} appointmentId - Appointment ID
+   * @returns {Promise<Object>} Lab prescription details with tests
+   */
+  async getAppointmentLabPrescription(appointmentId) {
+    try {
+      console.log('🔬 Fetching lab prescription for appointment:', appointmentId);
+      const response = await apiClient.get(`/Patients/me/appointments/${appointmentId}/lab-prescriptions`);
+
+      console.log('✅ Lab prescription fetched:', response.data);
+      return {
+        success: true,
+        data: response.data?.data || response.data,
+      };
+    } catch (error) {
+      // 404 means no lab prescription exists for this appointment
+      if (error.response?.status === 404) {
+        console.log('No lab prescription found for appointment');
+        return {
+          success: true,
+          data: null,
+        };
+      }
+
+      console.error('❌ Error fetching lab prescription:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'فشل تحميل التحاليل المطلوبة',
+      };
+    }
+  }
+
+  /**
    * Get all lab orders for the current patient
    * GET /Patients/me/lab-orders
    * @returns {Promise<Array>} Array of lab orders

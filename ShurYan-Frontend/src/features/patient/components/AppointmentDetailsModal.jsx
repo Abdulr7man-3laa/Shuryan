@@ -22,6 +22,7 @@ const AppointmentDetailsModal = ({ isOpen, onClose, appointment }) => {
   const [activeTab, setActiveTab] = useState('documentation'); // documentation, labs, prescription
   const [documentation, setDocumentation] = useState(null);
   const [prescription, setPrescription] = useState(null);
+  const [labPrescription, setLabPrescription] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -32,6 +33,8 @@ const AppointmentDetailsModal = ({ isOpen, onClose, appointment }) => {
         fetchDocumentation();
       } else if (activeTab === 'prescription') {
         fetchPrescription();
+      } else if (activeTab === 'labs') {
+        fetchLabPrescription();
       }
     }
   }, [isOpen, appointment, activeTab]);
@@ -113,6 +116,34 @@ const AppointmentDetailsModal = ({ isOpen, onClose, appointment }) => {
     }
   };
 
+  const fetchLabPrescription = async () => {
+    if (!appointment?.id) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('🔬 Fetching lab prescription for appointment:', appointment.id);
+      const result = await patientService.getAppointmentLabPrescription(appointment.id);
+
+      if (result.success && result.data) {
+        console.log('✅ Lab prescription loaded:', result.data);
+        setLabPrescription(result.data);
+      } else {
+        setLabPrescription(null);
+        if (result.error) {
+          setError(result.error);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error fetching lab prescription:', err);
+      setLabPrescription(null);
+      setError('فشل تحميل التحاليل المطلوبة');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen || !appointment) return null;
 
   const tabs = [
@@ -147,8 +178,8 @@ const AppointmentDetailsModal = ({ isOpen, onClose, appointment }) => {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${isActive
-                          ? 'bg-[#223045] text-white shadow-lg scale-105'
-                          : 'bg-white/10 text-white hover:bg-[#223045]/80 hover:scale-105'
+                        ? 'bg-[#223045] text-white shadow-lg scale-105'
+                        : 'bg-white/10 text-white hover:bg-[#223045]/80 hover:scale-105'
                         }`}
                     >
                       <TabIcon className="text-lg" />
@@ -378,30 +409,128 @@ const AppointmentDetailsModal = ({ isOpen, onClose, appointment }) => {
             {/* Lab Tests Tab */}
             {activeTab === 'labs' && (
               <div className="animate-fadeIn">
-                {appointment.labTests && appointment.labTests.length > 0 ? (
-                  <div className="space-y-3">
-                    {appointment.labTests.map((test, index) => (
-                      <div key={index} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200">
-                        <div className="flex items-center gap-3">
-                          {/* Number Badge */}
-                          <div className="w-10 h-10 bg-purple-500 text-white rounded-xl flex items-center justify-center text-lg font-black flex-shrink-0">
-                            {index + 1}
-                          </div>
-
-                          {/* Test Details */}
-                          <div className="flex-1">
-                            <h4 className="text-lg font-black text-slate-800">
-                              {test.name}
-                            </h4>
-                            {test.notes && (
-                              <p className="text-sm text-slate-600 mt-1">
-                                <span className="font-semibold">ملاحظات:</span> {test.notes}
+                {loading ? (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-semibold">جاري تحميل التحاليل المطلوبة...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-16">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FaFlask className="text-4xl text-red-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-700 mb-2">حدث خطأ</h3>
+                    <p className="text-slate-500 mb-4">{error}</p>
+                    <button
+                      onClick={fetchLabPrescription}
+                      className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-semibold transition-all"
+                    >
+                      إعادة المحاولة
+                    </button>
+                  </div>
+                ) : labPrescription?.tests && labPrescription.tests.length > 0 ? (
+                  <div className="space-y-6">
+                    {/* Doctor Info */}
+                    {labPrescription.doctorName && (
+                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-5 border-2 border-indigo-200">
+                        <div className="flex items-center gap-4">
+                          {labPrescription.doctorProfileImage ? (
+                            <img
+                              src={labPrescription.doctorProfileImage}
+                              alt={labPrescription.doctorName}
+                              className="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md"
+                            />
+                          ) : (
+                            <div className="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center text-white text-2xl font-black shadow-md">
+                              {labPrescription.doctorName.charAt(0)}
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="text-lg font-black text-slate-800">{labPrescription.doctorName}</h4>
+                            {labPrescription.doctorSpecialty && (
+                              <p className="text-sm text-slate-600 font-semibold">
+                                {getSpecialtyById(labPrescription.doctorSpecialty)}
                               </p>
                             )}
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {/* General Notes */}
+                    {labPrescription.generalNotes && (
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-5 border-2 border-amber-200">
+                        <h3 className="text-lg font-black text-slate-800 mb-3 flex items-center gap-2">
+                          <FaNotesMedical className="text-amber-500 text-xl" />
+                          ملاحظات عامة
+                        </h3>
+                        <p className="text-slate-700 leading-relaxed">
+                          {labPrescription.generalNotes}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Tests List */}
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-black text-slate-800 mb-3">قائمة التحاليل</h3>
+                      {labPrescription.tests.map((test, index) => (
+                        <div key={test.id} className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200">
+                          <div className="flex items-start gap-3">
+                            {/* Number Badge */}
+                            <div className="w-10 h-10 bg-purple-500 text-white rounded-xl flex items-center justify-center text-lg font-black flex-shrink-0">
+                              {index + 1}
+                            </div>
+
+                            {/* Test Details */}
+                            <div className="flex-1">
+                              <h4 className="text-lg font-black text-slate-800 mb-2">
+                                {test.testName}
+                              </h4>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {test.testCode && (
+                                  <div className="bg-white rounded-lg p-3 border border-purple-200">
+                                    <span className="text-xs text-slate-500 font-semibold block mb-1">كود التحليل</span>
+                                    <span className="text-sm font-bold text-slate-800">{test.testCode}</span>
+                                  </div>
+                                )}
+
+                                {test.category && (
+                                  <div className="bg-white rounded-lg p-3 border border-purple-200">
+                                    <span className="text-xs text-slate-500 font-semibold block mb-1">الفئة</span>
+                                    <span className="text-sm font-bold text-slate-800">{test.category}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {test.specialInstructions && (
+                                <div className="bg-white rounded-lg p-3 border border-purple-200 mt-3">
+                                  <span className="text-xs text-slate-500 font-semibold block mb-1">إرشادات خاصة</span>
+                                  <span className="text-sm font-bold text-slate-800">{test.specialInstructions}</span>
+                                </div>
+                              )}
+
+                              {test.doctorNotes && (
+                                <div className="bg-white rounded-lg p-3 border border-purple-200 mt-3">
+                                  <span className="text-xs text-slate-500 font-semibold block mb-1">ملاحظات الدكتور</span>
+                                  <span className="text-sm font-bold text-slate-800">{test.doctorNotes}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Order Status */}
+                    {labPrescription.hasOrder && (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
+                        <h4 className="text-lg font-black text-slate-800 mb-2">حالة الطلب</h4>
+                        <p className="text-slate-700">
+                          تم إنشاء طلب معمل - الحالة: <span className="font-bold">{labPrescription.orderStatus || 'قيد المعالجة'}</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-16">

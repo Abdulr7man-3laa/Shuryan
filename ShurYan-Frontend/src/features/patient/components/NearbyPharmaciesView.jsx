@@ -9,48 +9,98 @@ import usePharmacy from '../hooks/usePharmacy';
 const NearbyPharmaciesView = ({ pharmacies = [], loading, onClose, onSelectPharmacy, prescription }) => {
   const [sentPharmacies, setSentPharmacies] = useState(new Set());
   const [sendingPharmacy, setSendingPharmacy] = useState(null);
+  const [sendingToAll, setSendingToAll] = useState(false);
 
   // Use pharmacy hook for sending prescriptions
   const { sendPrescriptionToPharmacy } = usePharmacy();
 
   // Ensure pharmacies is always an array
   const safePharmacies = Array.isArray(pharmacies) ? pharmacies : [];
-  
-  console.log('🏪 [NearbyPharmaciesView] Received pharmacies:', pharmacies);
-  console.log('🏪 [NearbyPharmaciesView] Safe pharmacies:', safePharmacies);
+
 
   const handleSendPrescription = async (pharmacy) => {
+    if (!prescription?.id) {
+      console.error('❌ No prescription ID provided');
+      return { success: false, pharmacyName: pharmacy.name, error: 'لا يوجد معرف للروشتة' };
+    }
+
+    setSendingPharmacy(pharmacy.id);
+    console.log('📤 Sending prescription to pharmacy:', pharmacy.name, 'Prescription ID:', prescription.id);
+
+    try {
+      // Use real API to send prescription via hook
+      const result = await sendPrescriptionToPharmacy(prescription.id, pharmacy.id);
+
+      if (!result.success) {
+        // API returned error
+        const errorMsg = result.error || 'فشل في إرسال الروشتة';
+        console.error('❌ API returned error:', errorMsg);
+        return { success: false, pharmacyName: pharmacy.name, error: errorMsg };
+      }
+
+      // Mark as sent
+      setSentPharmacies(prev => new Set([...prev, pharmacy.id]));
+      console.log('✅ Prescription sent successfully to:', pharmacy.name);
+
+      return { success: true, pharmacyName: pharmacy.name };
+    } catch (error) {
+      // Unexpected error
+      console.error('❌ Unexpected error sending prescription:', error);
+      const errorMsg = error?.message || 'حدث خطأ غير متوقع';
+      return { success: false, pharmacyName: pharmacy.name, error: errorMsg };
+    } finally {
+      setSendingPharmacy(null);
+    }
+  };
+
+  const handleSendToAll = async () => {
     if (!prescription?.id) {
       console.error('❌ No prescription ID provided');
       alert('خطأ: لا يوجد معرف للروشتة');
       return;
     }
 
-    setSendingPharmacy(pharmacy.id);
-    console.log('📤 Sending prescription to pharmacy:', pharmacy.name, 'Prescription ID:', prescription.id);
-    
-    try {
-      // Use real API to send prescription via hook
-      const result = await sendPrescriptionToPharmacy(prescription.id, pharmacy.id);
-      
-      if (!result.success) {
-        throw new Error(result.error);
+    setSendingToAll(true);
+    console.log('📤 Sending prescription to all pharmacies');
+
+    const results = [];
+
+    // Send to all pharmacies that haven't received it yet
+    for (const pharmacy of safePharmacies) {
+      if (!sentPharmacies.has(pharmacy.id)) {
+        setSendingPharmacy(pharmacy.id);
+        const result = await handleSendPrescription(pharmacy);
+        results.push(result);
+
+        // Small delay between requests to avoid overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
-      
-      // Mark as sent
-      setSentPharmacies(prev => new Set([...prev, pharmacy.id]));
-      console.log('✅ Prescription sent successfully to:', pharmacy.name);
-      
-      // Show success message
-      alert(`تم إرسال الروشتة بنجاح إلى ${pharmacy.name}`);
-    } catch (error) {
-      console.error('❌ Error sending prescription:', error);
-      
-      // Show user-friendly error message
-      const errorMessage = error.response?.data?.message || 'فشل في إرسال الروشتة. يرجى المحاولة مرة أخرى.';
-      alert(errorMessage);
-    } finally {
-      setSendingPharmacy(null);
+    }
+
+    setSendingToAll(false);
+    setSendingPharmacy(null);
+
+    // Show detailed summary
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+    const failedPharmacies = results.filter(r => !r.success);
+
+    if (failCount === 0 && successCount > 0) {
+      alert(`✅ تم إرسال الروشتة بنجاح إلى جميع الصيدليات (${successCount})`);
+    } else if (successCount === 0 && failCount > 0) {
+      // All failed
+      const errorDetails = failedPharmacies
+        .map(f => `- ${f.pharmacyName}: ${f.error}`)
+        .join('\n');
+      alert(`❌ فشل إرسال الروشتة لجميع الصيدليات:\n\n${errorDetails}`);
+    } else if (successCount > 0 && failCount > 0) {
+      // Mixed results
+      const errorDetails = failedPharmacies
+        .map(f => `- ${f.pharmacyName}: ${f.error}`)
+        .join('\n');
+      alert(`⚠️ نتائج متفاوتة:\n\n✅ تم الإرسال بنجاح: ${successCount}\n❌ فشل الإرسال: ${failCount}\n\nتفاصيل الأخطاء:\n${errorDetails}`);
+    } else {
+      alert('لا توجد صيدليات للإرسال إليها');
     }
   };
 
@@ -79,12 +129,34 @@ const NearbyPharmaciesView = ({ pharmacies = [], loading, onClose, onSelectPharm
           <h3 className="text-2xl font-black text-slate-800">أقرب الصيدليات</h3>
           <p className="text-slate-600 font-semibold mt-1">اختر الصيدلية المناسبة لك</p>
         </div>
-        <button
-          onClick={onClose}
-          className="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-all"
-        >
-          <FaTimes className="text-slate-600" />
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Send to All Button */}
+          {safePharmacies.length > 0 && sentPharmacies.size < safePharmacies.length && (
+            <button
+              onClick={handleSendToAll}
+              disabled={sendingToAll || sendingPharmacy !== null}
+              className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {sendingToAll ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>جاري الإرسال...</span>
+                </>
+              ) : (
+                <>
+                  <FaPaperPlane className="text-sm" />
+                  <span>إرسال للجميع ({safePharmacies.length - sentPharmacies.size})</span>
+                </>
+              )}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-all"
+          >
+            <FaTimes className="text-slate-600" />
+          </button>
+        </div>
       </div>
 
       {/* Pharmacies Grid */}
@@ -97,8 +169,17 @@ const NearbyPharmaciesView = ({ pharmacies = [], loading, onClose, onSelectPharm
           >
             {/* Rank Badge */}
             <div className="flex items-start justify-between mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-black text-sm">#{index + 1}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-black text-sm">#{index + 1}</span>
+                </div>
+                {/* Sent Badge */}
+                {sentPharmacies.has(pharmacy.id) && (
+                  <div className="flex items-center gap-1 bg-green-100 px-2 py-1 rounded-lg">
+                    <FaCheckCircle className="text-green-600 text-xs" />
+                    <span className="text-green-700 font-bold text-xs">تم الإرسال</span>
+                  </div>
+                )}
               </div>
               {pharmacy.rating && (
                 <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg">
