@@ -13,6 +13,7 @@ import useLabOrders from '../hooks/useLabOrders';
 import { formatDate } from '../../../utils/helpers';
 import { startWork, getOrderDetails } from '../../../api/services/laboratory.service';
 import OrderDetailsModal from '../components/OrderDetailsModal';
+import UploadResultsModal from '../components/UploadResultsModal';
 import { LAB_ORDER_STATUS, LAB_STATUS_CONFIG } from '../constants/labConstants';
 
 /**
@@ -96,6 +97,10 @@ const LaboratoryDashboard = () => {
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
   const [loadingOrderDetails, setLoadingOrderDetails] = useState(false);
 
+  // Upload results modal state
+  const [isUploadResultsModalOpen, setIsUploadResultsModalOpen] = useState(false);
+  const [uploadResultsOrder, setUploadResultsOrder] = useState(null);
+
 
   // Handle start work (status 6 -> 7)
   const handleStartWork = async (orderId) => {
@@ -150,6 +155,38 @@ const LaboratoryDashboard = () => {
   const handleCloseOrderDetailsModal = () => {
     setIsOrderDetailsModalOpen(false);
     setSelectedOrderDetails(null);
+  };
+
+  // Handle upload results
+  const handleUploadResults = async (orderId) => {
+    console.log('📤 Upload results for order:', orderId);
+    setIsUploadResultsModalOpen(true);
+    setLoadingOrderDetails(true);
+    setUploadResultsOrder(null);
+
+    try {
+      const details = await getOrderDetails(orderId);
+      setUploadResultsOrder(details);
+      console.log('📋 Order details for upload:', details);
+    } catch (error) {
+      console.error('❌ Error fetching order details for upload:', error);
+      alert('حدث خطأ أثناء جلب تفاصيل الطلب');
+      setIsUploadResultsModalOpen(false);
+    } finally {
+      setLoadingOrderDetails(false);
+    }
+  };
+
+  // Handle close upload results modal
+  const handleCloseUploadResultsModal = () => {
+    setIsUploadResultsModalOpen(false);
+    setUploadResultsOrder(null);
+  };
+
+  // Handle upload success
+  const handleUploadSuccess = () => {
+    refreshOrders();
+    fetchStatistics();
   };
 
 
@@ -299,7 +336,18 @@ const LaboratoryDashboard = () => {
                                 <span>بدء العمل</span>
                               </button>
                             )}
-                            
+
+                            {/* Upload Results Button - Only show for status 7 (IN_PROGRESS_AT_LAB) */}
+                            {order.status === LAB_ORDER_STATUS.IN_PROGRESS_AT_LAB && (
+                              <button
+                                onClick={() => handleUploadResults(order.id)}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                              >
+                                <FaFlask className="text-base" />
+                                <span>رفع النتيجة</span>
+                              </button>
+                            )}
+
                             {/* View Details Button */}
                             <button
                               onClick={() => handleViewOrderDetails(order.id)}
@@ -347,6 +395,14 @@ const LaboratoryDashboard = () => {
         onClose={handleCloseOrderDetailsModal}
         orderDetails={selectedOrderDetails}
         loading={loadingOrderDetails}
+      />
+
+      {/* Upload Results Modal */}
+      <UploadResultsModal
+        isOpen={isUploadResultsModalOpen}
+        onClose={handleCloseUploadResultsModal}
+        orderDetails={uploadResultsOrder}
+        onUploadSuccess={handleUploadSuccess}
       />
     </div>
   );

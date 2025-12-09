@@ -7,6 +7,7 @@ import LabPrescriptionDetailsModal from '../components/lab/LabPrescriptionDetail
 import OrderLabTestModal from '../components/OrderLabTestModal';
 import LabReportsModal from '../components/LabReportsModal';
 import PaymentModal from '../components/lab/PaymentModal';
+import LabOrderResultsModal from '../components/lab/LabOrderResultsModal';
 import { formatDate } from '@/utils/helpers';
 import useAuth from '../../auth/hooks/useAuth';
 import patientService from '@/api/services/patient.service';
@@ -38,10 +39,14 @@ const LabResultsPage = () => {
   const [labPrescriptionToOrder, setLabPrescriptionToOrder] = useState(null);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
   const [labPrescriptionForReports, setLabPrescriptionForReports] = useState(null);
-  
+
   // Payment modal state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
+
+  // Order Details (Results) Modal
+  const [isOrderResultsModalOpen, setIsOrderResultsModalOpen] = useState(false);
+  const [selectedOrderForResults, setSelectedOrderForResults] = useState(null);
 
   const fetchLabPrescriptions = async () => {
     setLoading(true);
@@ -544,11 +549,13 @@ const LabResultsPage = () => {
                                 الدفع الآن
                               </button>
                             )}
-                            
+
                             <button
                               onClick={() => {
                                 // Handle view order details
                                 console.log('View order:', order);
+                                setSelectedOrderForResults(order);
+                                setIsOrderResultsModalOpen(true);
                               }}
                               className="px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl hover:from-teal-600 hover:to-emerald-700 transition-all font-bold text-sm shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
                             >
@@ -619,6 +626,18 @@ const LabResultsPage = () => {
             fetchActiveLabOrders();
             fetchCompletedLabOrders();
           }}
+        />
+      )}
+
+      {/* Lab Order Results Modal */}
+      {isOrderResultsModalOpen && selectedOrderForResults && (
+        <LabOrderResultsModal
+          isOpen={isOrderResultsModalOpen}
+          onClose={() => {
+            setIsOrderResultsModalOpen(false);
+            setSelectedOrderForResults(null);
+          }}
+          orderId={selectedOrderForResults.id}
         />
       )}
     </div>

@@ -10,5 +10,6 @@ namespace Shuryan.Application.DTOs.Responses.Laboratory
         public Guid PrescriptionId { get; set; }
         public string TestName { get; set; } = string.Empty;
         public DateTime RequestedDate { get; set; }
+        public Guid? LabOrderId { get; set; }
     }
 }

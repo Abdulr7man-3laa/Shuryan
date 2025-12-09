@@ -6,6 +6,8 @@ import {
 import { usePatientsStore } from '../stores/patientsStore';
 import { formatDate } from '@/utils/helpers';
 import LabPrescriptionDetailsModal from './LabPrescriptionDetailsModal';
+// Reuse the Patient's LabOrderResultsModal as requested ("exactly as patient")
+import LabOrderResultsModal from '../../patient/components/lab/LabOrderResultsModal';
 
 /**
  * LabResultsModal Component - Premium Design
@@ -15,11 +17,16 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // Results Modal State
+  const [selectedResultsOrderId, setSelectedResultsOrderId] = useState(null);
+  const [isResultsModalOpen, setIsResultsModalOpen] = useState(false);
+
   const {
     labPrescriptions,
     detailsLoading,
     detailsError,
-    fetchLabPrescriptions
+    fetchLabPrescriptions,
+    fetchLabPrescriptionDetails // Import this action
   } = usePatientsStore();
 
   // Handle view prescription details
@@ -202,6 +209,21 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
                           <FaEye className="w-4 h-4" />
                           عرض التحاليل
                         </button>
+
+                        {/* View Results Button */}
+                        <button
+                          onClick={() => {
+                            // Using standard logic mirroring patient view
+                            const orderId = prescription.labOrderId || prescription.id || prescription.prescriptionId;
+                            console.log('🚀 Opening results for Order ID:', orderId);
+                            setSelectedResultsOrderId(orderId);
+                            setIsResultsModalOpen(true);
+                          }}
+                          className="px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl hover:from-teal-600 hover:to-emerald-700 transition-all font-bold text-sm shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
+                        >
+                          <FaEye className="w-4 h-4" />
+                          عرض النتائج
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -232,6 +254,18 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
         prescriptionId={selectedPrescriptionId}
         patientId={patient?.patientId || patient?.id}
       />
+
+      {/* Lab Order Results Modal (Shared Patient Component) */}
+      {isResultsModalOpen && selectedResultsOrderId && (
+        <LabOrderResultsModal
+          isOpen={isResultsModalOpen}
+          onClose={() => {
+            setIsResultsModalOpen(false);
+            setSelectedResultsOrderId(null);
+          }}
+          orderId={selectedResultsOrderId}
+        />
+      )}
     </div>
   );
 };

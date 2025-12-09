@@ -405,6 +405,11 @@ namespace Shuryan.Application.Services
                     var prescriptionDetails = await _unitOfWork.LabPrescriptions.GetPrescriptionWithDetailsAsync(prescription.Id);
                     if (prescriptionDetails == null) continue;
 
+                    // Get latest lab order for this prescription to link results
+                    var labOrder = (await _unitOfWork.LabOrders.FindAsync(o => o.LabPrescriptionId == prescription.Id))
+                        .OrderByDescending(o => o.CreatedAt)
+                        .FirstOrDefault();
+
                     foreach (var item in prescriptionDetails.Items)
                     {
                         var labTest = await _unitOfWork.LabTests.GetByIdAsync(item.LabTestId);
@@ -414,7 +419,8 @@ namespace Shuryan.Application.Services
                             {
                                 PrescriptionId = prescription.Id,
                                 TestName = labTest.Name,
-                                RequestedDate = prescription.CreatedAt
+                                RequestedDate = prescription.CreatedAt,
+                                LabOrderId = labOrder?.Id
                             });
                         }
                     }

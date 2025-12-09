@@ -77,14 +77,34 @@ export const startWork = async (orderId) => {
     console.log('▶️ [Laboratory Service] Starting work on order:', orderId);
 
     const response = await apiClient.post(`/Laboratories/me/lab-orders/${orderId}/start-work`);
-    
+
     console.log('✅ [Laboratory Service] Work started successfully:', response.data);
-    
+
     return { success: true, data: response.data?.data || response.data };
   } catch (error) {
     console.error(`❌ [Laboratory Service] Error starting work on order ${orderId}:`, error);
     console.error('Error details:', error.response?.data);
     return { success: false, error: error.response?.data?.message || 'فشل في بدء العمل على الطلب' };
+  }
+};
+
+export const submitTestResults = async (orderId, resultsData) => {
+  try {
+    console.log('📤 [Laboratory Service] Submitting test results for order:', orderId);
+    console.log('Results data:', resultsData);
+
+    const response = await apiClient.post(
+      `/Laboratories/me/lab-orders/${orderId}/submit-results`,
+      { results: resultsData }
+    );
+
+    console.log('✅ [Laboratory Service] Test results submitted successfully:', response.data);
+
+    return response.data?.data || response.data;
+  } catch (error) {
+    console.error(`❌ [Laboratory Service] Error submitting test results for order ${orderId}:`, error);
+    console.error('Error details:', error.response?.data);
+    throw error;
   }
 };
 
@@ -285,6 +305,7 @@ const laboratoryService = {
   getOrderDetails,
   respondToOrder,
   startWork,
+  submitTestResults,
   // Profile management
   getBasicInfo,
   updateBasicInfo,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaCamera, FaCheckCircle, FaExclamationCircle, FaSpinner } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaCamera, FaCheckCircle, FaExclamationCircle, FaSpinner, FaClock, FaTimesCircle } from 'react-icons/fa';
 import usePharmacyProfile from '../../hooks/usePharmacyProfile';
 
 /**
@@ -144,6 +144,46 @@ const BasicInfoSection = () => {
     };
   }, [profileImagePreview]);
 
+  // Helper function to get verification status styling
+  const getVerificationBadge = () => {
+    if (!basicInfo?.verificationStatusName) return null;
+
+    const status = basicInfo.verificationStatusName;
+
+    const statusConfig = {
+      'Verified': {
+        bgColor: 'bg-green-500/30',
+        textColor: 'text-green-50',
+        borderColor: 'border-green-300/50',
+        icon: <FaCheckCircle className="w-5 h-5" />,
+        label: 'موثق',
+      },
+      'Pending': {
+        bgColor: 'bg-yellow-500/30',
+        textColor: 'text-yellow-50',
+        borderColor: 'border-yellow-300/50',
+        icon: <FaClock className="w-5 h-5" />,
+        label: 'قيد المراجعة',
+      },
+      'Unverified': {
+        bgColor: 'bg-red-500/30',
+        textColor: 'text-red-50',
+        borderColor: 'border-red-300/50',
+        icon: <FaTimesCircle className="w-5 h-5" />,
+        label: 'غير موثق',
+      },
+    };
+
+    const config = statusConfig[status] || statusConfig['Unverified'];
+
+    return (
+      <div className={`${config.bgColor} ${config.textColor} border-2 ${config.borderColor} backdrop-blur-sm px-5 py-2.5 rounded-full flex items-center gap-2.5 shadow-lg`}>
+        {config.icon}
+        <span className="text-base font-extrabold">{config.label}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
       {/* Header */}
@@ -153,26 +193,29 @@ const BasicInfoSection = () => {
             <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
               <FaUser className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h2 className="text-2xl font-black text-white">المعلومات الأساسية</h2>
-              <p className="text-teal-50 text-sm mt-1">معلومات الصيدلية الأساسية</p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-white">المعلومات الأساسية</h2>
+                <p className="text-teal-50 text-sm mt-1">معلومات الصيدلية الأساسية</p>
+              </div>
+              {/* Verification Status Badge */}
+              {getVerificationBadge()}
             </div>
           </div>
 
           {/* Auto-save status */}
           {autoSaveStatus && (
             <div
-              className={`px-4 py-2 backdrop-blur-sm rounded-lg ${
-                autoSaveStatus === 'pending'
-                  ? 'bg-yellow-500/20 text-yellow-100'
-                  : autoSaveStatus === 'saving'
+              className={`px-4 py-2 backdrop-blur-sm rounded-lg ${autoSaveStatus === 'pending'
+                ? 'bg-yellow-500/20 text-yellow-100'
+                : autoSaveStatus === 'saving'
                   ? 'bg-blue-500/20 text-blue-100'
                   : autoSaveStatus === 'saved'
-                  ? 'bg-green-500/30 text-green-100'
-                  : autoSaveStatus === 'error'
-                  ? 'bg-red-500/20 text-red-100'
-                  : ''
-              }`}
+                    ? 'bg-green-500/30 text-green-100'
+                    : autoSaveStatus === 'error'
+                      ? 'bg-red-500/20 text-red-100'
+                      : ''
+                }`}
             >
               <span className="text-sm font-medium flex items-center gap-2">
                 {autoSaveStatus === 'pending' && '⏳ سيتم الحفظ خلال 3 ثواني...'}

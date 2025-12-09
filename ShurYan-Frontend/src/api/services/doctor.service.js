@@ -450,6 +450,17 @@ class DoctorService {
     const response = await apiClient.get(`/Doctors/me/reviews/${reviewId}/details`);
     return response.data?.data || null;
   }
+  async getLabOrderResults(orderId) {
+    try {
+      console.log(`🔬 Fetching results for lab order (Doctor): ${orderId}`);
+      const response = await apiClient.get(`/lab-orders/${orderId}/results`);
+      console.log('✅ Lab order results fetched:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching lab order results:', error);
+      throw error;
+    }
+  }
 }
 
 export default new DoctorService();

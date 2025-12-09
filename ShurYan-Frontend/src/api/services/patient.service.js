@@ -501,6 +501,30 @@ class PatientService {
   }
 
   /**
+   * Get lab order results details
+   * GET /api/lab-orders/{orderId}/results
+   * @param {string} orderId - Lab Order ID
+   * @returns {Promise<Object>} Lab order results
+   */
+  async getLabOrderResults(orderId) {
+    try {
+      console.log(`🔬 Fetching results for lab order: ${orderId}`);
+      // Using the exact endpoint provided by the user
+      // Note: The base URL is likely handled by apiClient, but if the user specified a full URL in the prompt 
+      // "http://localhost:5117/api/lab-orders...", I should assume it's relative to the API base.
+      // My apiClient usually handles the base. The prompt URL was: http://localhost:5117/api/lab-orders/...
+      // So I will use /lab-orders/...
+
+      const response = await apiClient.get(`/lab-orders/${orderId}/results`);
+      console.log('✅ Lab order results fetched:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching lab order results:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Confirm laboratory order
    * PUT /patients/me/lab-orders/{orderId}/confirm
    * @param {string} orderId - Lab Order ID

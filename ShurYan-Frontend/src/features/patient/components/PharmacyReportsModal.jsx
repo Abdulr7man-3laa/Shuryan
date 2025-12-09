@@ -596,10 +596,6 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onOrderNow }) => {
           <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-600">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="font-semibold">تاريخ الإرسال: </span>
-                {formatDate(report.sentAt)}
-              </div>
-              <div>
                 <span className="font-semibold">تاريخ الرد: </span>
                 {formatDate(report.respondedAt)}
               </div>
