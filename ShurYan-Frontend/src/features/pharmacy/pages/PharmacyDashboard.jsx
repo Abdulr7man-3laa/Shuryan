@@ -100,6 +100,7 @@ const PharmacyDashboard = () => {
 
   // Dropdown state
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef(null);
 
   // Status options for dropdown
@@ -147,8 +148,18 @@ const PharmacyDashboard = () => {
   };
 
   // Toggle dropdown
-  const toggleDropdown = (orderId) => {
-    setOpenDropdownId(openDropdownId === orderId ? null : orderId);
+  const toggleDropdown = (orderId, event) => {
+    if (openDropdownId === orderId) {
+      setOpenDropdownId(null);
+    } else {
+      // Calculate button position for fixed positioning
+      const rect = event.currentTarget.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8, // 8px gap below button
+        left: rect.left
+      });
+      setOpenDropdownId(orderId);
+    }
   };
 
   // Close dropdown when clicking outside
@@ -235,7 +246,7 @@ const PharmacyDashboard = () => {
         </div>
 
         {/* Recent Orders Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 overflow-visible">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-black text-slate-800">أحدث الطلبات</h2>
           </div>
@@ -263,93 +274,98 @@ const PharmacyDashboard = () => {
               </button>
             </div>
           ) : orders.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-slate-200">
-                    <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">رقم الروشتة</th>
-                    <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">المريض</th>
-                    <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">الطبيب</th>
-                    <th className="text-center py-4 px-4 text-sm font-bold text-slate-700">الحالة</th>
-                    <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">التاريخ</th>
-                    <th className="text-center py-4 px-4 text-sm font-bold text-slate-700">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => {
-                    const statusConfig = getStatusConfig(order.pharmacyOrderStatus);
-                    // Check if status update is disabled (status 2 or 9)
-                    const isStatusUpdateDisabled = order.pharmacyOrderStatus === 1 || order.pharmacyOrderStatus === 2 || order.pharmacyOrderStatus === 9;
+            <div className="overflow-visible">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-slate-200">
+                      <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">رقم الروشتة</th>
+                      <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">المريض</th>
+                      <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">الطبيب</th>
+                      <th className="text-center py-4 px-4 text-sm font-bold text-slate-700">الحالة</th>
+                      <th className="text-right py-4 px-4 text-sm font-bold text-slate-700">التاريخ</th>
+                      <th className="text-center py-4 px-4 text-sm font-bold text-slate-700">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => {
+                      const statusConfig = getStatusConfig(order.pharmacyOrderStatus);
+                      // Check if status update is disabled (status 2 or 9)
+                      const isStatusUpdateDisabled = order.pharmacyOrderStatus === 1 || order.pharmacyOrderStatus === 2 || order.pharmacyOrderStatus === 9;
 
-                    return (
-                      <tr key={order.orderId} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                        <td className="py-4 px-4">
-                          <span className="text-sm font-semibold text-slate-800">{order.prescriptionNumber}</span>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div>
-                            <p className="text-sm font-medium text-slate-700">{order.patientName}</p>
-                            <p className="text-xs text-slate-500">{order.patientPhone}</p>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="text-sm font-medium text-slate-700">{order.doctorName}</span>
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          {isStatusUpdateDisabled ? (
-                            <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.textColor} border ${statusConfig.borderColor}`}>
-                              {statusConfig.label}
-                            </span>
-                          ) : (
-                            <div className="relative inline-block" ref={openDropdownId === order.orderId ? dropdownRef : null}>
-                              <button
-                                onClick={() => toggleDropdown(order.orderId)}
-                                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border ${statusConfig.borderColor} ${statusConfig.bgColor} ${statusConfig.textColor} transition-all duration-200 hover:shadow-sm`}
-                              >
-                                <span>{statusConfig.label}</span>
-                                <FaChevronDown className={`text-xs transition-transform duration-200 ${openDropdownId === order.orderId ? 'rotate-180' : ''}`} />
-                              </button>
-
-                              {/* Status Update Dropdown */}
-                              {openDropdownId === order.orderId && (
-                                <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border-2 border-slate-100 z-50 overflow-hidden animate-fadeIn">
-                                  {statusOptions.map((option) => {
-                                    const Icon = option.icon;
-                                    return (
-                                      <button
-                                        key={option.value}
-                                        onClick={() => handleStatusUpdate(order.orderId, option.value)}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-right border-b border-slate-100 last:border-b-0`}
-                                      >
-                                        <div className={`w-8 h-8 ${option.bgColor} rounded-lg flex items-center justify-center`}>
-                                          <Icon className={`text-sm ${option.color}`} />
-                                        </div>
-                                        <span className="text-sm font-semibold text-slate-700">{option.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                      return (
+                        <tr key={order.orderId} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                          <td className="py-4 px-4">
+                            <span className="text-sm font-semibold text-slate-800">{order.prescriptionNumber}</span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div>
+                              <p className="text-sm font-medium text-slate-700">{order.patientName}</p>
+                              <p className="text-xs text-slate-500">{order.patientPhone}</p>
                             </div>
-                          )}
-                        </td>
-                        <td className="py-4 px-4">
-                          <span className="text-sm text-slate-600">{formatDate(order.receivedAt, 'DD/MM/YYYY HH:mm')}</span>
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <button
-                            onClick={() => handleViewPrescription(order.orderId)}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#00b19f] hover:bg-[#00a08d] text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                          >
-                            <FaFilePrescription className="text-base" />
-                            <span>عرض التفاصيل</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="text-sm font-medium text-slate-700">{order.doctorName}</span>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            {isStatusUpdateDisabled ? (
+                              <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-semibold ${statusConfig.bgColor} ${statusConfig.textColor} border ${statusConfig.borderColor}`}>
+                                {statusConfig.label}
+                              </span>
+                            ) : (
+                              <div className="relative inline-block" ref={openDropdownId === order.orderId ? dropdownRef : null}>
+                                <button
+                                  onClick={(e) => toggleDropdown(order.orderId, e)}
+                                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border ${statusConfig.borderColor} ${statusConfig.bgColor} ${statusConfig.textColor} transition-all duration-200 hover:shadow-sm`}
+                                >
+                                  <span>{statusConfig.label}</span>
+                                  <FaChevronDown className={`text-xs transition-transform duration-200 ${openDropdownId === order.orderId ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {/* Status Update Dropdown */}
+                                {openDropdownId === order.orderId && (
+                                  <div
+                                    className="fixed w-56 bg-white rounded-xl shadow-2xl border-2 border-slate-100 z-[9999] overflow-hidden animate-fadeIn"
+                                    style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
+                                  >
+                                    {statusOptions.map((option) => {
+                                      const Icon = option.icon;
+                                      return (
+                                        <button
+                                          key={option.value}
+                                          onClick={() => handleStatusUpdate(order.orderId, option.value)}
+                                          className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-right border-b border-slate-100 last:border-b-0`}
+                                        >
+                                          <div className={`w-8 h-8 ${option.bgColor} rounded-lg flex items-center justify-center`}>
+                                            <Icon className={`text-sm ${option.color}`} />
+                                          </div>
+                                          <span className="text-sm font-semibold text-slate-700">{option.label}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="text-sm text-slate-600">{formatDate(order.receivedAt, 'DD/MM/YYYY HH:mm')}</span>
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <button
+                              onClick={() => handleViewPrescription(order.orderId)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-[#00b19f] hover:bg-[#00a08d] text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            >
+                              <FaFilePrescription className="text-base" />
+                              <span>عرض التفاصيل</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : (
             /* Empty State */
