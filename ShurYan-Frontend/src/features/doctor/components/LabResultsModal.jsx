@@ -89,7 +89,7 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-5 rounded-t-2xl">
+          <div className="bg-gradient-to-r from-teal-500 to-emerald-600 px-6 py-5 rounded-t-2xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
@@ -128,7 +128,7 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
               /* Loading State */
               <div className="flex items-center justify-center py-20">
                 <div className="text-center">
-                  <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <div className="w-16 h-16 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4"></div>
                   <p className="text-slate-600 font-medium">جاري تحميل التحاليل المطلوبة...</p>
                 </div>
               </div>
@@ -142,7 +142,7 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
                 <p className="text-slate-600 font-medium mb-4">{detailsError}</p>
                 <button
                   onClick={() => fetchLabPrescriptions(patient?.patientId || patient?.id)}
-                  className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all font-bold text-sm shadow-lg"
+                  className="px-6 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl hover:from-teal-600 hover:to-emerald-700 transition-all font-bold text-sm shadow-lg"
                 >
                   إعادة المحاولة
                 </button>
@@ -159,13 +159,13 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
             ) : (
               <>
                 {/* Stats Header */}
-                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-5 mb-6 border-2 border-purple-200">
+                <div className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl p-5 mb-6 border-2 border-teal-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center">
                       <FaFlask className="text-white text-lg" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-purple-700">إجمالي التحاليل المطلوبة</p>
+                      <p className="text-xs font-semibold text-teal-700">إجمالي التحاليل المطلوبة</p>
                       <p className="text-2xl font-black text-slate-900">{labPrescriptions.length || 0}</p>
                     </div>
                   </div>
@@ -176,11 +176,11 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
                   {labPrescriptions.map((prescription, index) => (
                     <div
                       key={prescription.prescriptionId}
-                      className="bg-white rounded-2xl border-2 border-slate-200 hover:border-purple-400 transition-all shadow-sm hover:shadow-lg p-6"
+                      className="bg-white rounded-2xl border-2 border-slate-200 hover:border-teal-400 transition-all shadow-sm hover:shadow-lg p-6"
                     >
                       <div className="flex items-center gap-4">
                         {/* Number Badge */}
-                        <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+                        <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0">
                           {index + 1}
                         </div>
 
@@ -188,28 +188,18 @@ const LabResultsModal = ({ isOpen, onClose, patient }) => {
                         <div className="flex-1">
                           {/* Test Name */}
                           <div className="flex items-center gap-2 mb-2">
-                            <FaFlask className="text-purple-600 text-sm" />
-                            <span className="text-xs font-semibold text-purple-700">اسم التحليل</span>
+                            <FaFlask className="text-teal-600 text-sm" />
+                            <span className="text-xs font-semibold text-teal-700">اسم التحليل</span>
                           </div>
                           <p className="text-lg font-black text-slate-900 mb-3">{prescription.testName}</p>
 
                           {/* Requested Date */}
                           <div className="flex items-center gap-2">
-                            <FaCalendarAlt className="text-purple-600 text-sm" />
-                            <span className="text-xs font-semibold text-purple-700">تاريخ الطلب:</span>
+                            <FaCalendarAlt className="text-teal-600 text-sm" />
+                            <span className="text-xs font-semibold text-teal-700">تاريخ الطلب:</span>
                             <span className="text-sm font-bold text-slate-700">{formatPrescriptionDate(prescription.requestedDate)}</span>
                           </div>
                         </div>
-
-                        {/* View Button */}
-                        <button
-                          onClick={() => handleViewPrescription(prescription.prescriptionId)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl hover:from-purple-600 hover:to-indigo-700 transition-all font-bold text-sm shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
-                        >
-                          <FaEye className="w-4 h-4" />
-                          عرض التحاليل
-                        </button>
-
                         {/* View Results Button */}
                         <button
                           onClick={() => {
