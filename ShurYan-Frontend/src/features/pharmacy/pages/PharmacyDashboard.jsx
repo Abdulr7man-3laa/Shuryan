@@ -170,9 +170,17 @@ const PharmacyDashboard = () => {
       }
     };
 
+    const handleScroll = () => {
+      // Close dropdown when scrolling
+      setOpenDropdownId(null);
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true); // true for capture phase
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
     };
   }, []);
 
