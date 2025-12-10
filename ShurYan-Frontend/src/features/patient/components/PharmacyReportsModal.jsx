@@ -56,56 +56,41 @@ const PharmacyReportsModal = ({ isOpen, onClose, prescription, onNewOrder }) => 
           // Convert API response to our expected format
           const convertedReports = response.pharmacyResponses?.map((pharmacyResponse, index) => {
             console.log(`🔍 Processing pharmacy response ${index + 1}:`, pharmacyResponse);
-            console.log(`🔍 All keys in pharmacy response ${index + 1}:`, Object.keys(pharmacyResponse));
-
-            // Try different possible field names for medications
-            const possibleMedicationFields = [
-              'availableMedications', 'medications', 'medicationResponses',
-              'items', 'drugs', 'prescriptionItems', 'responseItems'
-            ];
+            console.log(`🔍 Medications array:`, pharmacyResponse.medications);
 
             let availableMeds = [];
             let alternativeMeds = [];
             let unavailableMeds = [];
 
-            // Check each possible field
-            possibleMedicationFields.forEach(field => {
-              if (pharmacyResponse[field]) {
-                console.log(`🔍 Found ${field}:`, pharmacyResponse[field]);
+            // Process the medications array from the backend
+            if (pharmacyResponse.medications && Array.isArray(pharmacyResponse.medications)) {
+              pharmacyResponse.medications.forEach(med => {
+                console.log(`🔍 Processing medication:`, med);
 
-                if (Array.isArray(pharmacyResponse[field])) {
-                  // If it's an array, try to categorize by status
-                  pharmacyResponse[field].forEach(med => {
-                    console.log(`🔍 Medication item:`, med);
-
-                    if (med.status === 'available' || med.isAvailable === true || med.available === true) {
-                      availableMeds.push(med);
-                    } else if (med.status === 'alternative' || med.isAlternative === true || med.alternative === true) {
-                      alternativeMeds.push(med);
-                    } else if (med.status === 'unavailable' || med.isAvailable === false || med.available === false) {
-                      unavailableMeds.push(med);
-                    } else {
-                      // If no clear status, assume available if it has a price
-                      if (med.price || med.totalPrice || med.amount) {
-                        availableMeds.push(med);
-                      } else {
-                        unavailableMeds.push(med);
-                      }
-                    }
+                if (med.isAvailable && med.availableQuantity > 0) {
+                  // Medication is available
+                  availableMeds.push({
+                    medicationName: med.medicationName,
+                    quantity: med.availableQuantity,
+                    unitPrice: med.unitPrice,
+                    isAvailable: true
+                  });
+                } else if (!med.isAvailable && med.alternativeOne) {
+                  // Medication not available but has alternative
+                  alternativeMeds.push({
+                    medicationName: med.alternativeOne.medicationName,
+                    unitPrice: med.alternativeOne.unitPrice,
+                    originalMedication: med.medicationName,
+                    quantity: 1
+                  });
+                } else if (!med.isAvailable && !med.alternativeOne) {
+                  // Medication not available and no alternative
+                  unavailableMeds.push({
+                    medicationName: med.medicationName,
+                    isAvailable: false
                   });
                 }
-              }
-            });
-
-            // Fallback: use direct fields if they exist
-            if (pharmacyResponse.availableMedications && Array.isArray(pharmacyResponse.availableMedications)) {
-              availableMeds = pharmacyResponse.availableMedications;
-            }
-            if (pharmacyResponse.alternativeMedications && Array.isArray(pharmacyResponse.alternativeMedications)) {
-              alternativeMeds = pharmacyResponse.alternativeMedications;
-            }
-            if (pharmacyResponse.unavailableMedications && Array.isArray(pharmacyResponse.unavailableMedications)) {
-              unavailableMeds = pharmacyResponse.unavailableMedications;
+              });
             }
 
             console.log(`🔍 Final medication counts for pharmacy ${index + 1}:`, {
@@ -489,20 +474,18 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onOrderNow }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-bold text-slate-800">
-                          {med.medicationName || med.name || med.drugName || med.itemName || 'دواء غير محدد'}
+                          {med.medicationName}
                         </h4>
-                        <p className="text-sm text-slate-600">
-                          {(med.dosage || med.dose || med.strength || '')}
-                          {(med.dosage || med.dose || med.strength) && (med.form || med.type || med.unit) && ' • '}
-                          {(med.form || med.type || med.unit || '')}
+                        <p className="text-sm text-green-600 font-semibold">
+                          متوفر
                         </p>
                       </div>
                       <div className="text-left">
                         <p className="text-lg font-black text-green-600">
-                          {med.price || med.totalPrice || med.amount || med.cost || 0} ج.م
+                          {med.unitPrice} ج.م
                         </p>
                         <p className="text-sm text-slate-600">
-                          الكمية: {med.quantity || med.qty || med.count || med.amount || 1}
+                          الكمية: {med.quantity}
                         </p>
                       </div>
                     </div>
@@ -516,32 +499,38 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onOrderNow }) => {
           {report.alternativeMedications && report.alternativeMedications.length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
-                <FaExclamationTriangle className="text-blue-500" />
+                <FaExclamationTriangle className="text-amber-500" />
                 البدائل المقترحة ({report.alternativeMedications.length})
               </h3>
               <div className="space-y-3">
                 {report.alternativeMedications.map((med, index) => (
-                  <div key={index} className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                  <div key={index} className="bg-amber-50 rounded-xl p-4 border-2 border-amber-300">
+                    {/* Original medication that's not available */}
+                    <div className="mb-3 pb-3 border-b border-amber-200">
+                      <div className="flex items-center gap-2">
+                        <FaTimesCircle className="text-red-500 text-sm" />
+                        <span className="text-sm text-slate-600 font-semibold">غير متوفر:</span>
+                        <span className="text-sm text-slate-800 font-bold">{med.originalMedication}</span>
+                      </div>
+                    </div>
+
+                    {/* Alternative medication that's offered */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-bold text-slate-800">
-                          {med.medicationName || med.name || med.drugName || med.itemName || 'دواء غير محدد'}
+                        <div className="flex items-center gap-2 mb-1">
+                          <FaCheckCircle className="text-amber-500 text-sm" />
+                          <span className="text-xs text-amber-700 font-semibold">البديل المقترح:</span>
+                        </div>
+                        <h4 className="font-black text-slate-800 text-lg">
+                          {med.medicationName}
                         </h4>
-                        <p className="text-sm text-slate-600">
-                          {(med.dosage || med.dose || med.strength || '')}
-                          {(med.dosage || med.dose || med.strength) && (med.form || med.type || med.unit) && ' • '}
-                          {(med.form || med.type || med.unit || '')}
-                        </p>
-                        <p className="text-xs text-blue-600 font-semibold">
-                          بديل لـ: {med.originalMedication || med.originalName || med.replacesName || 'دواء أصلي'}
-                        </p>
                       </div>
                       <div className="text-left">
-                        <p className="text-lg font-black text-blue-600">
-                          {med.price || med.totalPrice || med.amount || med.cost || 0} ج.م
+                        <p className="text-lg font-black text-amber-600">
+                          {med.unitPrice} ج.م
                         </p>
                         <p className="text-sm text-slate-600">
-                          الكمية: {med.quantity || med.qty || med.count || med.amount || 1}
+                          الكمية: {med.quantity}
                         </p>
                       </div>
                     </div>
@@ -564,16 +553,14 @@ const ReportDetailsModal = ({ isOpen, onClose, report, onOrderNow }) => {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-bold text-slate-800">
-                          {med.medicationName || med.name || med.drugName || med.itemName || 'دواء غير محدد'}
+                          {med.medicationName}
                         </h4>
-                        <p className="text-sm text-slate-600">
-                          {(med.dosage || med.dose || med.strength || '')}
-                          {(med.dosage || med.dose || med.strength) && (med.form || med.type || med.unit) && ' • '}
-                          {(med.form || med.type || med.unit || '')}
+                        <p className="text-sm text-red-600 font-semibold">
+                          غير متوفر ولا يوجد بديل
                         </p>
                       </div>
                       <div className="text-left">
-                        <span className="text-sm font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full">
+                        <span className="text-sm font-bold text-red-600 bg-red-100 px-3 py-1.5 rounded-full">
                           غير متوفر
                         </span>
                       </div>
