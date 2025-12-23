@@ -1,4 +1,4 @@
-# Shuryan | شُريان 🩺
+# ShurYan | شُريان 
 
 [![Project Status: MVP 1.0](https://img.shields.io/badge/Status-MVP%201.0-brightgreen)](https://github.com/Abdulr7man-3laa/Shuryan)
 [![Framework: .NET Core](https://img.shields.io/badge/Backend-.NET%20Core-512bd4)](https://dotnet.microsoft.com/en-us/apps/aspnet)
